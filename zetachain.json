@@ -1,0 +1,70 @@
+[
+  {
+    "index": 0,
+    "timestamp": 1773780450,
+    "transactions": [
+      {
+        "from": "network",
+        "to": "genesis",
+        "amount": 0
+      }
+    ],
+    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "merkle_root": "0000000000000000000000000000000000000000000000000000000000000000",
+    "session_key": "0000000000000000000000000000000000000000000000000000000000000000",
+    "nonce": 0,
+    "hash": "8ac80474058f032fcee3530162e4f1f15fccf43edd8fb86368f55f9305b230fe",
+    "difficulty": 0,
+    "reward_ztc": 0
+  },
+  {
+    "index": 1,
+    "timestamp": 1773780450,
+    "transactions": [
+      {
+        "from": "ztc1_hamidchaouchi_algeria_2026",
+        "to": "receiver_1",
+        "amount": 1.0
+      },
+      {
+        "from": "network",
+        "to": "ztc1_hamidchaouchi_algeria_2026",
+        "amount": 50
+      }
+    ],
+    "prev_hash": "8ac80474058f032fcee3530162e4f1f15fccf43edd8fb86368f55f9305b230fe",
+    "merkle_root": "526bdbbf1d94834317aa9f81dbf0d0738ad989e1c637abf4d938b2a8e938ac33",
+    "session_key": "8fa756aea27945826e5fd0d3b8d35b8ceeb989fb64f6be08ccff67126572996a",
+    "nonce": 4606,
+    "hash": "00055fc3a368e90e4679bb4a4c745bec8f281e60e1258b0ec939162864702420",
+    "difficulty": 3,
+    "zeta_time_s": 0.065,
+    "mine_time_s": 0.005,
+    "reward_ztc": 50
+  },
+  {
+    "index": 2,
+    "timestamp": 1773780450,
+    "transactions": [
+      {
+        "from": "ztc1_hamidchaouchi_algeria_2026",
+        "to": "receiver_1",
+        "amount": 1.0
+      },
+      {
+        "from": "network",
+        "to": "ztc1_hamidchaouchi_algeria_2026",
+        "amount": 50
+      }
+    ],
+    "prev_hash": "00055fc3a368e90e4679bb4a4c745bec8f281e60e1258b0ec939162864702420",
+    "merkle_root": "526bdbbf1d94834317aa9f81dbf0d0738ad989e1c637abf4d938b2a8e938ac33",
+    "session_key": "8fa756aea27945826e5fd0d3b8d35b8ceeb989fb64f6be08ccff67126572996a",
+    "nonce": 300,
+    "hash": "00069cddd10920dbfe8d3faa2c490d851681edfe9606e5df501af06d8b836637",
+    "difficulty": 3,
+    "zeta_time_s": 0.063,
+    "mine_time_s": 0.0,
+    "reward_ztc": 50
+  }
+]
