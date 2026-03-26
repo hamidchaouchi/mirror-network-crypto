@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# بيئات افتراضية
+venv/
+.venv/
+env/
+
+# قواعد البيانات
+*.db
+*.db-shm
+*.db-wal
+
+# ملفات السجلات
+logs/
+*.log
+
+# أدوات تطوير
+.idea/
+.vscode/
+*.DS_Store
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage

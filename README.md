@@ -1,65 +1,112 @@
-# Mirror Network Crypto
-### Cryptography + Mathematics + Blockchain
+# 🧠 MirrorZeta — نظام الذاكرة الحية
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Research: Zenodo](https://img.shields.io/badge/Research-Zenodo-blue)](https://zenodo.org/records/19060261)
+نظام لتخزين التجارب النصية مع بيانات عاطفية، والبحث فيها دلالياً، وكشف الروابط بين الذكريات المتشابهة.
 
 ---
 
-## Contents
+## 📁 هيكل المشروع
 
-| File | Description |
-|------|-------------|
-| `mirror_network_complete.html` | Encryption demo — open in browser, no install |
-| `zetacoin_miner.py` | ZetaCoin (ZTC) miner — Python |
-| `ZetaCoin_Whitepaper.pdf` | ZetaCoin whitepaper |
-| `zetachain.json` | Sample blockchain data |
-
----
-
-## 1 — Mirror Network Encryption
-
-XOR stream cipher based on 56 independent Riemann zeta evaluations.
-
-**Open `mirror_network_complete.html` in any browser — no installation needed.**
-
-Architecture: 7 universes × 8 worlds (Z/30Z)* = 56 independent ζᵣ(s) layers
-
----
-
-## 2 — ZetaCoin (ZTC)
-
-The first cryptocurrency where mining advances real mathematics.
-
-Every block mined computes 56 zeta function evaluations — contributing to the study of the Riemann Hypothesis.
-
-**Run the miner:**
-```bash
-pip install mpmath
-python zetacoin_miner.py
+```
+mirror_zeta/
+├── mirror_zeta.py      ← المحرك الرئيسي
+├── demo.py             ← عرض توضيحي تفاعلي
+├── requirements.txt
+├── .gitignore
+├── logs/               ← ملفات السجلات (تُنشأ تلقائياً)
+└── tests/
+    └── test_mirror_zeta.py
 ```
 
 ---
 
-## Mathematical Foundation
+## ⚡ تشغيل سريع
 
-Built on 4 proved theorems:
+```bash
+# 1. استنساخ المستودع
+git clone https://github.com/YOUR_USERNAME/mirror-zeta.git
+cd mirror-zeta
 
-- **T1:** `images(p) = ⌊d(p−1)/2⌋` — verified 166/166 primes
-- **T2:** `ζ(s) = kˢZₖ(s) + ζH(s,1+k)` — verified 120/120 tests
-- **T3:** Generalization to all Dirichlet L-functions
-- **T4:** Universal identity for any Dirichlet series
+# 2. تثبيت المتطلبات الأساسية
+pip install numpy pytest
 
-Research preprint: [zenodo.org/records/19060261](https://zenodo.org/records/19060261)
+# 3. (اختياري) للحصول على بحث دلالي حقيقي
+pip install sentence-transformers faiss-cpu torch
+
+# 4. تشغيل العرض التوضيحي
+python demo.py
+
+# 5. تشغيل الاختبارات
+pytest tests/ -v
+```
 
 ---
 
-## Security Note
+## 🔧 المكونات الرئيسية
 
-Hardness is **conjectured, not formally proved**. Use for research purposes.
+### `MemoryTrace` — الذكرى
+
+| حقل | النوع | الوصف |
+|---|---|---|
+| `content` | `str` | نص التجربة |
+| `world_id` | `int` | رقم تعريف "العالم" (سياق، مشروع، شخص…) |
+| `emotion` | `str` | التسمية العاطفية |
+| `valence` | `float [-1, +1]` | شدة المشاعر: -1 سلبي جداً، +1 إيجابي جداً |
+| `strength` | `float` | قوة الذكرى (ترتفع كلما تشابكت مع غيرها) |
+| `embedding` | `np.ndarray` | متجه المعنى الدلالي |
+
+### `MirrorZetaCore` — الواجهة الرئيسية
+
+```python
+from mirror_zeta import MirrorZetaCore
+
+with MirrorZetaCore(db_path="my_memory.db") as zeta:
+
+    # تسجيل تجربة
+    id = zeta.experience(
+        content  = "أشعر بسعادة كبيرة اليوم",
+        world_id = 1,
+        emotion  = "فرح",
+        valence  = 0.9,
+    )
+
+    # بحث دلالي
+    results = zeta.recall("سعادة وإيجابية", limit=3)
+    for trace, score in results:
+        print(f"{score:.2f} | {trace.content}")
+
+    # كشف الروابط بين الذكريات المتشابهة
+    report = zeta.reflect()
+    print(f"روابط مكتشفة: {report['connections']}")
+
+    # ملخص عالم معين
+    summary = zeta.get_world_summary(1)
+```
 
 ---
 
-## License
+## 🌡️ مستويات الأداء
 
-MIT — H. Chaouchi · Algeria · March 2026
+| الإعداد | البحث | `reflect()` |
+|---|---|---|
+| `numpy` فقط | نصي بسيط | يحتاج embeddings يدوية |
+| + `sentence-transformers` | **دلالي كامل** ✅ | **كشف روابط تلقائي** ✅ |
+| + `faiss-cpu` | **سريع جداً** ✅ | — |
+
+---
+
+## 🧪 الاختبارات
+
+```bash
+pytest tests/ -v                  # كل الاختبارات
+pytest tests/ -v -k "storage"     # اختبارات التخزين فقط
+pytest tests/ -v -k "core"        # اختبارات المحرك فقط
+pytest tests/ --tb=short          # أخطاء مختصرة
+```
+
+---
+
+## 📌 ملاحظات
+
+- **`world_id`**: يمكن استخدامه لتمييز السياقات — مثلاً `0` = عمل، `1` = شخصي، `2` = مشروع معين.
+- **`reflect()`**: يعمل بشكل مثالي فقط مع `sentence-transformers`. بدونه تحتاج إلى حقن `embedding` يدوياً.
+- قاعدة البيانات `SQLite` — لا تحتاج إلى إعداد إضافي.
