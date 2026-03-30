@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>توزيع المرايا | Mirror Distribution</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07080f; --s1:#0d0e1e; --s2:#13152a; --s3:#191c36;
+  --border:#1e2245; --gold:#d4a84b; --gold2:#f0c96a;
+  --blue:#4a8fd4; --blue2:#7ab8f0; --green:#45c47a;
+  --red:#e05050; --orange:#e09040; --purple:#a070e8;
+  --text:#e0ddf0; --muted:#5a5a90;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Tajawal',sans-serif;min-height:100vh;padding:1.5rem;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 55% 45% at 15% 20%,rgba(74,143,212,.05) 0%,transparent 60%),
+             radial-gradient(ellipse 45% 55% at 85% 80%,rgba(160,112,232,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0;}
+.page{position:relative;z-index:1;max-width:1100px;margin:0 auto;}
+
+header{text-align:center;padding:2rem 0 1.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:.7rem;}
+h1{font-size:clamp(1.5rem,4vw,2.4rem);font-weight:700;}
+h1 em{color:var(--gold2);font-style:normal;}
+.subtitle{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);margin-top:.5rem;}
+
+/* CONTROLS */
+.controls{
+  display:grid;grid-template-columns:repeat(3,1fr) auto;
+  gap:.8rem;align-items:flex-end;
+  background:var(--s1);border:1px solid var(--border);
+  border-top:3px solid var(--gold);border-radius:6px;
+  padding:1.4rem;margin-bottom:1.5rem;
+}
+.cg label{display:block;font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem;}
+.cg input,.cg select{
+  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:4px;
+  color:var(--gold2);font-family:'JetBrains Mono',monospace;font-size:.95rem;
+  padding:.5rem .7rem;outline:none;
+}
+.cg input:focus,.cg select:focus{border-color:var(--gold);}
+.cg select option{background:var(--s2);}
+.btn{background:var(--gold);color:#07080f;border:none;border-radius:4px;
+  font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;
+  padding:.55rem 1.5rem;cursor:pointer;white-space:nowrap;}
+.btn:hover{background:var(--gold2);}
+
+/* STATS BAR */
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:.7rem;margin-bottom:1.5rem;}
+.sc{background:var(--s1);border:1px solid var(--border);border-radius:4px;padding:.75rem;text-align:center;}
+.sc-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;}
+.sc-v{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;}
+
+/* MAIN CANVAS AREA */
+.viz-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.panel{background:var(--s1);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.panel-title{
+  background:var(--s2);padding:.65rem 1rem;
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:.15em;color:var(--muted);text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+.panel-title span{color:var(--gold);}
+.panel-body{padding:1rem;}
+canvas{display:block;width:100%;border-radius:3px;}
+
+/* MOD ANALYSIS */
+.mod-panel{background:var(--s1);border:1px solid var(--border);border-radius:6px;margin-bottom:1.5rem;overflow:hidden;}
+.mod-grid{
+  display:grid;grid-template-columns:repeat(8,1fr);
+  gap:1px;background:var(--border);
+  padding:0;
+}
+.mod-cell{
+  background:var(--s2);padding:.7rem .3rem;text-align:center;
+  transition:background .2s;
+}
+.mod-cell:hover{background:var(--s3);}
+.mod-class{font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:700;}
+.mod-prime-pct{font-size:.65rem;font-family:'JetBrains Mono',monospace;margin-top:.15rem;}
+.mod-mirror-pct{font-size:.65rem;font-family:'JetBrains Mono',monospace;}
+.mod-label-row{
+  display:grid;grid-template-columns:repeat(8,1fr);
+  gap:1px;background:var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:.58rem;
+  color:var(--muted);text-align:center;
+}
+.mod-label-cell{background:var(--s1);padding:.3rem .2rem;}
+
+/* CORRELATION */
+.corr-panel{background:var(--s1);border:1px solid var(--border);border-radius:6px;margin-bottom:1.5rem;overflow:hidden;}
+
+/* OBSERVATION */
+.obs{background:rgba(212,168,75,.06);border:1px solid rgba(212,168,75,.25);
+  border-right:3px solid var(--gold);border-radius:4px;
+  padding:1rem 1.2rem;font-size:.88rem;line-height:1.8;color:var(--text);}
+.obs-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--gold);
+  text-transform:uppercase;letter-spacing:.15em;margin-bottom:.6rem;}
+
+/* LEGEND */
+.legend{display:flex;gap:1.2rem;flex-wrap:wrap;margin-bottom:.6rem;}
+.leg{display:flex;align-items:center;gap:.4rem;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+@media(max-width:700px){
+  .controls{grid-template-columns:1fr 1fr;}
+  .viz-grid{grid-template-columns:1fr;}
+  .stats-bar{grid-template-columns:repeat(3,1fr);}
+  .mod-grid,.mod-label-row{grid-template-columns:repeat(4,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="eyebrow">Mirror Network · تحليل التوزيع</div>
+  <h1>هل يشبه توزيع <em>g_k(p)</em><br>توزيع الأعداد الأولية؟</h1>
+  <div class="subtitle">مقارنة كثافة الأولية في {g_k(p) : p أولي} مقابل {الأولية} في نفس النطاق</div>
+</header>
+
+<div class="controls">
+  <div class="cg">
+    <label>نطاق p (حتى)</label>
+    <input type="number" id="rangeN" value="500" min="50" max="5000">
+  </div>
+  <div class="cg">
+    <label>قيمة k</label>
+    <input type="number" id="kVal" value="1" min="1" max="20">
+  </div>
+  <div class="cg">
+    <label>حجم البُن (bin)</label>
+    <select id="binSize">
+      <option value="20">20</option>
+      <option value="50" selected>50</option>
+      <option value="100">100</option>
+      <option value="200">200</option>
+    </select>
+  </div>
+  <button class="btn" onclick="analyze()">حلّل ▶</button>
+</div>
+
+<div class="stats-bar" id="statsBar">
+  <div class="sc"><div class="sc-l">أعداد أولية p ≤ N</div><div class="sc-v" id="s1">—</div></div>
+  <div class="sc"><div class="sc-l">قيم g_k(p) الفريدة</div><div class="sc-v" id="s2">—</div></div>
+  <div class="sc"><div class="sc-l">g_k(p) أولية</div><div class="sc-v" style="color:var(--green)" id="s3">—</div></div>
+  <div class="sc"><div class="sc-l">نسبة أولية في النواتج</div><div class="sc-v" style="color:var(--gold2)" id="s4">—</div></div>
+  <div class="sc"><div class="sc-l">معامل الارتباط ρ</div><div class="sc-v" id="s5">—</div></div>
+</div>
+
+<!-- DENSITY PLOTS -->
+<div class="viz-grid">
+  <div class="panel">
+    <div class="panel-title">كثافة <span>الأعداد الأولية</span> في النطاق</div>
+    <div class="panel-body">
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--blue2)"></div>عدد الأوليات في كل نطاق</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--gold)"></div>π(x)/x تقريبي (1/ln x)</div>
+      </div>
+      <canvas id="primeDensityCanvas" height="180"></canvas>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">كثافة <span>g_k(p) الأولية</span> في نطاقها</div>
+    <div class="panel-body">
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>g_k(p) أولي</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>g_k(p) مركب</div>
+      </div>
+      <canvas id="mirrorDensityCanvas" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- MOD 30 ANALYSIS -->
+<div class="mod-panel">
+  <div class="panel-title">توزيع mod 30 — <span>الفئات الثمانية (الأعوام الثمانية في البحث)</span></div>
+  <div class="panel-body" style="padding:.8rem 1rem 1rem">
+    <div class="legend" style="margin-bottom:.8rem">
+      <div class="leg"><div class="leg-dot" style="background:var(--blue2)"></div>أولية p: النسبة في كل فئة</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>g_k(p) أولية: النسبة في كل فئة</div>
+    </div>
+    <div class="mod-label-row" id="modLabels"></div>
+    <div class="mod-grid" id="modGrid"></div>
+  </div>
+</div>
+
+<!-- SCATTER -->
+<div class="panel" style="margin-bottom:1.5rem;">
+  <div class="panel-title">مخطط التشتت — <span>p (محور x) مقابل g_k(p) (محور y)</span> · أخضر = g_k(p) أولي</div>
+  <div class="panel-body">
+    <canvas id="scatterCanvas" height="220"></canvas>
+  </div>
+</div>
+
+<!-- OBSERVATION -->
+<div class="obs" id="obsBox" style="display:none">
+  <div class="obs-title">🔬 ما تقوله البيانات</div>
+  <div id="obsText"></div>
+</div>
+
+</div>
+<script>
+// ── Math ──────────────────────────────────────────────
+function isPrime(n){
+  if(n<2)return false; if(n<4)return true;
+  if(n%2===0||n%3===0)return false;
+  for(let i=5;i*i<=n;i+=6) if(n%i===0||n%(i+2)===0)return false;
+  return true;
+}
+function sieve(N){
+  const s=new Uint8Array(N+1).fill(1);
+  s[0]=s[1]=0;
+  for(let i=2;i*i<=N;i++) if(s[i]) for(let j=i*i;j<=N;j+=i) s[j]=0;
+  return s;
+}
+
+// ── Canvas helpers ─────────────────────────────────────
+function resizeCanvas(c){
+  const rect=c.getBoundingClientRect();
+  c.width=rect.width*devicePixelRatio;
+  c.height=c.height||180;
+  return c.getContext('2d');
+}
+
+function drawBarChart(canvas, data, colors, labels, maxY){
+  const dpr=devicePixelRatio||1;
+  canvas.width=canvas.offsetWidth*dpr;
+  const H=canvas.height, W=canvas.width;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const w=canvas.offsetWidth;
+  const h=H;
+
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#13152a';
+  ctx.fillRect(0,0,w,h);
+
+  const pad={l:28,r:8,t:8,b:28};
+  const aw=w-pad.l-pad.r, ah=h-pad.t-pad.b;
+  const n=data[0].length;
+  const bw=aw/n;
+  const mx=maxY||Math.max(...data.flat(),1);
+
+  // grid
+  ctx.strokeStyle='rgba(30,34,69,.8)'; ctx.lineWidth=1/dpr;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ah*(1-i/4);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+    ctx.fillStyle='rgba(90,90,144,.7)';
+    ctx.font=`${9*dpr}px JetBrains Mono`; ctx.textAlign='right';
+    ctx.fillText(Math.round(mx*i/4),pad.l-3,y+3);
+  }
+
+  // bars
+  data.forEach((series,si)=>{
+    series.forEach((v,i)=>{
+      const bh=(v/mx)*ah;
+      const x=pad.l+i*bw+(si*bw/data.length);
+      const bwi=bw/data.length-1;
+      ctx.fillStyle=colors[si];
+      ctx.globalAlpha=.8;
+      ctx.fillRect(x,pad.t+ah-bh,bwi,bh);
+    });
+  });
+  ctx.globalAlpha=1;
+
+  // x labels
+  if(labels){
+    ctx.fillStyle='rgba(90,90,144,.8)';
+    ctx.font=`${8*dpr}px JetBrains Mono`; ctx.textAlign='center';
+    labels.forEach((l,i)=>{
+      if(i%Math.ceil(n/8)===0)
+        ctx.fillText(l,pad.l+i*bw+bw/2,h-pad.b+12);
+    });
+  }
+}
+
+function drawScatter(canvas, points, rangeX, rangeY){
+  const dpr=devicePixelRatio||1;
+  canvas.width=canvas.offsetWidth*dpr;
+  const H=canvas.height, W=canvas.width;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const w=canvas.offsetWidth, h=H;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#13152a'; ctx.fillRect(0,0,w,h);
+
+  const pad={l:30,r:10,t:10,b:25};
+  const aw=w-pad.l-pad.r, ah=h-pad.t-pad.b;
+
+  // grid
+  ctx.strokeStyle='rgba(30,34,69,.6)'; ctx.lineWidth=1/dpr;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ah*i/4;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+    const x=pad.l+aw*i/4;
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+ah); ctx.stroke();
+  }
+
+  // points
+  points.forEach(pt=>{
+    const px=pad.l+(pt.x/rangeX)*aw;
+    const py=pad.t+ah-(pt.y/rangeY)*ah;
+    ctx.beginPath();
+    ctx.arc(px,py,2.5/dpr,0,Math.PI*2);
+    ctx.fillStyle=pt.prime ? 'rgba(69,196,122,.8)' : 'rgba(224,80,80,.4)';
+    ctx.fill();
+  });
+
+  // axes labels
+  ctx.fillStyle='rgba(90,90,144,.8)';
+  ctx.font=`${8*dpr}px JetBrains Mono`; ctx.textAlign='center';
+  ctx.fillText('p →',w-pad.r,h-pad.b+14);
+  ctx.save(); ctx.translate(10,pad.t+ah/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('g_k(p) →',0,0); ctx.restore();
+}
+
+// ── Main analysis ─────────────────────────────────────
+function analyze(){
+  const N=Math.min(parseInt(document.getElementById('rangeN').value)||500,5000);
+  const k=parseInt(document.getElementById('kVal').value)||1;
+  const bin=parseInt(document.getElementById('binSize').value)||50;
+
+  const sv=sieve(N);
+  const primes=[];
+  for(let i=2;i<=N;i++) if(sv[i]) primes.push(i);
+
+  // compute g_k(p) for each prime
+  const gkValues=primes.map(p=>({p, gk:p*p+k*p+1}));
+  const maxGK=Math.max(...gkValues.map(x=>x.gk));
+
+  // which g_k(p) are prime?
+  const gkPrimes=gkValues.filter(x=>isPrime(x.gk));
+  const gkPrimeSet=new Set(gkPrimes.map(x=>x.gk));
+
+  // ── Stats
+  document.getElementById('s1').textContent=primes.length;
+  document.getElementById('s2').textContent=new Set(gkValues.map(x=>x.gk)).size;
+  document.getElementById('s3').textContent=gkPrimes.length;
+  document.getElementById('s4').textContent=(gkPrimes.length/gkValues.length*100).toFixed(1)+'%';
+
+  // Pearson correlation between p and isPrime(g_k(p))
+  const xs=gkValues.map(x=>x.p);
+  const ys=gkValues.map(x=>isPrime(x.gk)?1:0);
+  const xm=xs.reduce((a,b)=>a+b,0)/xs.length;
+  const ym=ys.reduce((a,b)=>a+b,0)/ys.length;
+  const num=xs.reduce((a,x,i)=>a+(x-xm)*(ys[i]-ym),0);
+  const den=Math.sqrt(xs.reduce((a,x)=>a+(x-xm)**2,0)*ys.reduce((a,y)=>a+(y-ym)**2,0));
+  const rho=den>0?(num/den).toFixed(4):'—';
+  const rhoNum=parseFloat(rho);
+  const rhoEl=document.getElementById('s5');
+  rhoEl.textContent=rho;
+  rhoEl.style.color=Math.abs(rhoNum)>0.1?'var(--gold2)':Math.abs(rhoNum)>0.05?'var(--orange)':'var(--muted)';
+
+  // ── Prime density histogram (primes in bins)
+  const primeBins=[];
+  const binLabels=[];
+  for(let b=0;b*bin<N;b++){
+    const lo=b*bin+2, hi=Math.min((b+1)*bin+1,N);
+    let cnt=0;
+    for(let i=lo;i<=hi;i++) if(sv[i]) cnt++;
+    primeBins.push(cnt);
+    binLabels.push(lo);
+  }
+
+  // 1/ln(x) theoretical
+  const theorBins=binLabels.map(x=>x>1?bin/Math.log(x):0);
+
+  drawBarChart(
+    document.getElementById('primeDensityCanvas'),
+    [primeBins, theorBins.map(v=>Math.min(v,Math.max(...primeBins)))],
+    ['rgba(122,184,240,.7)','rgba(212,168,75,.5)'],
+    binLabels.map(String),
+    null
+  );
+
+  // ── Mirror density (g_k(p) values split into bins by their own range)
+  const gkMin=Math.min(...gkValues.map(x=>x.gk));
+  const gkBinSize=Math.ceil((maxGK-gkMin)/20)||1;
+  const mirrorBinsPrime=new Array(20).fill(0);
+  const mirrorBinsComp =new Array(20).fill(0);
+  const mirrorLabels=[];
+  for(let b=0;b<20;b++) mirrorLabels.push(gkMin+b*gkBinSize);
+
+  gkValues.forEach(({gk})=>{
+    const b=Math.min(Math.floor((gk-gkMin)/gkBinSize),19);
+    if(isPrime(gk)) mirrorBinsPrime[b]++;
+    else            mirrorBinsComp[b]++;
+  });
+
+  drawBarChart(
+    document.getElementById('mirrorDensityCanvas'),
+    [mirrorBinsPrime, mirrorBinsComp],
+    ['rgba(69,196,122,.8)','rgba(224,80,80,.5)'],
+    mirrorLabels.map(v=>v>9999?v.toExponential(1):String(v)),
+    null
+  );
+
+  // ── Mod 30 analysis
+  const mod30classes=[1,7,11,13,17,19,23,29];
+  const primeMod={}; const mirrorMod={};
+  mod30classes.forEach(r=>{primeMod[r]=0; mirrorMod[r]=0;});
+
+  primes.forEach(p=>{
+    const r=p%30;
+    if(primeMod[r]!==undefined) primeMod[r]++;
+  });
+  gkValues.forEach(({gk})=>{
+    if(!isPrime(gk)) return;
+    const r=gk%30;
+    if(mirrorMod[r]!==undefined) mirrorMod[r]++;
+  });
+
+  const totalPrimeMod=Object.values(primeMod).reduce((a,b)=>a+b,0)||1;
+  const totalMirrorMod=Object.values(mirrorMod).reduce((a,b)=>a+b,0)||1;
+
+  const labelsEl=document.getElementById('modLabels');
+  labelsEl.innerHTML=mod30classes.map(r=>`<div class="mod-label-cell">mod30=${r}</div>`).join('');
+
+  const gridEl=document.getElementById('modGrid');
+  gridEl.innerHTML=mod30classes.map(r=>{
+    const pp=(primeMod[r]/totalPrimeMod*100).toFixed(1);
+    const mp=(mirrorMod[r]/totalMirrorMod*100).toFixed(1);
+    const diff=parseFloat(mp)-parseFloat(pp);
+    const dc=diff>2?'var(--green)':diff<-2?'var(--red)':'var(--muted)';
+    return `<div class="mod-cell">
+      <div class="mod-class">${r}</div>
+      <div class="mod-prime-pct" style="color:var(--blue2)">${pp}%</div>
+      <div class="mod-mirror-pct" style="color:var(--green)">${mp}%</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;color:${dc};margin-top:.1rem">${diff>0?'+':''}${diff.toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+
+  // ── Scatter
+  const scatterPoints=gkValues.slice(0,300).map(({p,gk})=>({
+    x:p, y:gk, prime:isPrime(gk)
+  }));
+  const scCanvas=document.getElementById('scatterCanvas');
+  drawScatter(scCanvas, scatterPoints, N, maxGK);
+
+  // ── Observation text
+  const primePct=gkPrimes.length/gkValues.length;
+  // Expected density near g_k(p) ~ p² using PNT: ~1/ln(p²) = 1/(2 ln p)
+  const avgLnP=primes.reduce((a,p)=>a+Math.log(p),0)/primes.length;
+  const expectedPct=1/(2*avgLnP);
+  const ratio=primePct/expectedPct;
+
+  // Check if mod30 distribution of mirror primes matches prime distribution
+  const modKL=mod30classes.reduce((acc,r)=>{
+    const pp=primeMod[r]/totalPrimeMod||.001;
+    const mp=mirrorMod[r]/totalMirrorMod||.001;
+    return acc+pp*Math.log(pp/mp);
+  },0);
+
+  const obs=document.getElementById('obsBox');
+  obs.style.display='block';
+  document.getElementById('obsText').innerHTML=`
+    <strong>نسبة الأولية في نواتج g_k(p):</strong>
+    <span style="color:var(--gold2)">${(primePct*100).toFixed(2)}%</span>
+    — المتوقع نظرياً (نظرية الأعداد الأولية عند p²):
+    <span style="color:var(--blue2)">${(expectedPct*100).toFixed(2)}%</span>
+    — النسبة: <span style="color:${ratio>1.2?'var(--green)':ratio<0.8?'var(--red)':'var(--gold)'}">
+      ${ratio.toFixed(2)}×
+    </span>
+    <br><br>
+    <strong>توزيع mod 30:</strong>
+    تباعد كولباك-لايبلر بين توزيع الأوليات وتوزيع g_k(p) الأولية:
+    <span style="color:${modKL<0.05?'var(--green)':modKL<0.15?'var(--gold)':'var(--red)'}">
+      KL = ${modKL.toFixed(4)}
+    </span>
+    ${modKL<0.05?'← <strong style="color:var(--green)">التوزيعان متشابهان جداً</strong>':
+      modKL<0.15?'← <strong style="color:var(--gold)">تشابه معتدل</strong>':
+      '← <strong style="color:var(--red)">التوزيعان مختلفان</strong>'}
+    <br><br>
+    <strong>معامل الارتباط ρ(p, أولية g_k(p)):</strong>
+    <span style="color:var(--purple)">${rho}</span>
+    ${Math.abs(rhoNum)>0.1?' ← ارتباط ملحوظ':' ← ارتباط ضعيف (النتيجة قريبة من عشوائية)'}
+    <br><br>
+    <span style="color:var(--muted);font-size:.83rem">
+    <strong>التفسير:</strong> g_k(p) = p²+kp+1 ≈ p² للأعداد الكبيرة.
+    نظرية الأعداد الأولية تتنبأ بكثافة أولية ~1/ln(p²) في محيط p².
+    إذا كانت النسبة الفعلية <strong>أعلى من المتوقع</strong> بشكل منتظم،
+    فهذا يعني أن الأعداد الأولية تولّد أعداداً ذات بنية خاصة — وهذا هو جوهر فرضيتك.
+    </span>
+  `;
+}
+
+window.addEventListener('load', analyze);
+window.addEventListener('resize', analyze);
+</script>
+</body>
+</html>

@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>الشبكة المرآتية — فضاء الأعداد الأولية</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=Scheherazade+New:wght@400;700&display=swap');
+
+  :root {
+    --bg: #020408;
+    --panel: #080d14;
+    --border: #0f2040;
+    --text: #8ab4d4;
+    --bright: #c8e6ff;
+    --dim: #2a4060;
+    --c1:  #ff3333; /* أحمر   r=1  */
+    --c7:  #ff7700; /* برتقالي r=7  */
+    --c11: #ffdd00; /* أصفر   r=11 */
+    --c13: #00cc44; /* أخضر   r=13 */
+    --c17: #00cccc; /* فيروزي r=17 */
+    --c19: #3377ff; /* أزرق   r=19 */
+    --c23: #aa44ff; /* بنفسجي r=23 */
+    --c29: #ff44aa; /* وردي   r=29 */
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* شبكة خلفية */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,80,160,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,80,160,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+  }
+
+  header {
+    padding: 2rem 3rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .logo {
+    width: 48px; height: 48px;
+    border: 2px solid var(--c17);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 0 20px rgba(0,200,200,.3);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 20px rgba(0,200,200,.3); }
+    50%      { box-shadow: 0 0 40px rgba(0,200,200,.6); }
+  }
+
+  h1 {
+    font-family: 'Scheherazade New', serif;
+    font-size: 1.8rem;
+    color: var(--bright);
+    letter-spacing: .05em;
+  }
+
+  .subtitle {
+    font-size: .75rem;
+    color: var(--dim);
+    margin-top: .2rem;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    height: calc(100vh - 90px);
+  }
+
+  /* ===== canvas ===== */
+  #canvas-wrap {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 40% 40%, #040c1a 0%, #020408 70%);
+  }
+
+  canvas { display:block; width:100%; height:100%; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+
+  .canvas-label {
+    position:absolute; bottom:1rem; left:50%; transform:translateX(-50%);
+    font-size:.7rem; color:var(--dim);
+    letter-spacing:.1em;
+  }
+
+  /* محاور */
+  .axis-hint {
+    position:absolute;
+    font-size:.65rem;
+    color: var(--dim);
+    pointer-events:none;
+  }
+  .axis-x { bottom: 3rem; right: 2rem; color: #ff6644; }
+  .axis-y { top: 2rem; left: 2rem; color: #44ff88; }
+  .axis-z { top: 50%; left: 1rem; transform:translateY(-50%); color: #4499ff; }
+
+  /* ===== sidebar ===== */
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-section {
+    padding: 1.2rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-section h3 {
+    font-size: .7rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: .8rem;
+  }
+
+  /* لوحة الألوان */
+  .color-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem;
+  }
+
+  .color-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .5rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .2s;
+    font-size: .72rem;
+  }
+
+  .color-item:hover {
+    border-color: var(--border);
+    background: rgba(255,255,255,.03);
+  }
+
+  .color-item.active {
+    border-color: currentColor;
+    background: rgba(255,255,255,.05);
+  }
+
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  /* معلومات العدد الأولي */
+  #prime-info {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.2rem 1.4rem;
+  }
+
+  #prime-info h3 {
+    font-size: .7rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 1rem;
+  }
+
+  .prime-card {
+    background: rgba(0,80,160,.08);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: .6rem;
+    transition: all .3s;
+  }
+
+  .prime-card.selected {
+    border-color: var(--bright);
+    background: rgba(0,120,255,.12);
+    box-shadow: 0 0 20px rgba(0,120,255,.15);
+  }
+
+  .prime-number {
+    font-size: 1.6rem;
+    color: var(--bright);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .prime-wave {
+    font-size: .7rem;
+    margin-top: .3rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .prime-coords {
+    margin-top: .8rem;
+    font-size: .68rem;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .coord-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .coord-label { color: var(--dim); }
+  .coord-val   { color: var(--bright); font-weight: 600; }
+
+  /* أصفار */
+  .zero-list {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+
+  .zero-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .3rem .5rem;
+    border-radius: 3px;
+    font-size: .7rem;
+    cursor: pointer;
+    transition: background .2s;
+  }
+
+  .zero-item:hover { background: rgba(255,255,255,.04); }
+  .zero-item.active { background: rgba(0,150,255,.1); color: var(--bright); }
+
+  .zero-gamma { color: var(--bright); font-weight: 600; }
+  .zero-count { color: var(--dim); font-size: .65rem; }
+
+  /* تحكم */
+  .controls {
+    padding: .8rem 1.4rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+
+  button {
+    background: rgba(0,80,160,.2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: .35rem .8rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: .68rem;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: .05em;
+  }
+
+  button:hover {
+    background: rgba(0,120,255,.3);
+    border-color: var(--text);
+    color: var(--bright);
+  }
+
+  button.active-btn {
+    background: rgba(0,120,255,.4);
+    border-color: #4499ff;
+    color: #c8e6ff;
+  }
+
+  /* إحصاء */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem;
+    margin-top: .5rem;
+  }
+
+  .stat-box {
+    background: rgba(0,60,120,.15);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .5rem;
+    text-align: center;
+  }
+
+  .stat-val { font-size: 1.1rem; color: var(--bright); font-weight:600; }
+  .stat-lbl { font-size: .6rem; color: var(--dim); margin-top:.1rem; }
+
+  /* tooltip */
+  #tooltip {
+    position: fixed;
+    background: rgba(8,13,20,.95);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .6rem 1rem;
+    font-size: .7rem;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    max-width: 200px;
+  }
+
+  #tooltip .tt-prime { font-size: 1.2rem; color: var(--bright); font-weight:600; }
+  #tooltip .tt-info  { color: var(--text); margin-top: .3rem; line-height:1.6; }
+
+  /* تمرير مخصص */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--panel); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">∿</div>
+  <div>
+    <h1>الشبكة المرآتية — فضاء الأعداد الأولية</h1>
+    <div class="subtitle">Mirror Network · Three-dimensional prime coordinate space · H. Chaouchi 2026</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- canvas -->
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+    <div class="axis-hint axis-x">X = ln(p)</div>
+    <div class="axis-hint axis-y">Y = τ_r (إزاحة الموجة)</div>
+    <div class="axis-hint axis-z">Z = قوة الرنين</div>
+    <div class="canvas-label">اسحب للتدوير · عجلة الماوس للتكبير · انقر على نقطة لمعرفة تفاصيلها</div>
+  </div>
+
+  <!-- sidebar -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <h3>الموجات الثماني — الألوان</h3>
+      <div class="color-grid" id="color-filters"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>إحصاءات</h3>
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-val" id="s-primes">0</div>
+          <div class="stat-lbl">أعداد أولية</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="s-zeros">20</div>
+          <div class="stat-lbl">أصفار زيتا</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="s-visible">0</div>
+          <div class="stat-lbl">مرئي</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="s-selected">—</div>
+          <div class="stat-lbl">مختار</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="max-height:200px;overflow-y:auto;">
+      <h3>سلاسل الرنين — الأصفار</h3>
+      <div class="zero-list" id="zero-list"></div>
+    </div>
+
+    <div id="prime-info">
+      <h3>تفاصيل العدد الأولي</h3>
+      <div id="prime-details">
+        <div style="color:var(--dim);font-size:.75rem;margin-top:1rem;">
+          انقر على أي نقطة في الفضاء ثلاثي الأبعاد<br>لرؤية إحداثياتها ورنينها مع أصفار زيتا
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btn-auto" class="active-btn">⟳ دوران تلقائي</button>
+      <button id="btn-zeros">◎ أصفار زيتا</button>
+      <button id="btn-reset">↺ إعادة ضبط</button>
+      <button id="btn-chains">⛓ سلاسل الرنين</button>
+    </div>
+
+  </div>
+</div>
+
+<div id="tooltip">
+  <div class="tt-prime" id="tt-p"></div>
+  <div class="tt-info" id="tt-info"></div>
+</div>
+
+<script>
+// ============================================================
+// البيانات
+// ============================================================
+const R = [1,7,11,13,17,19,23,29];
+const TAU = {1:-0.054129,7:0.095811,11:0.038311,13:0.020793,
+             17:-0.006773,19:-0.033407,23:-0.022580,29:-0.038027};
+
+const WAVE_INFO = {
+  1:  {name:'أحمر',    hex:'#ff3333'},
+  7:  {name:'برتقالي', hex:'#ff7700'},
+  11: {name:'أصفر',    hex:'#ffdd00'},
+  13: {name:'أخضر',    hex:'#00cc44'},
+  17: {name:'فيروزي',  hex:'#00cccc'},
+  19: {name:'أزرق',    hex:'#3377ff'},
+  23: {name:'بنفسجي',  hex:'#aa44ff'},
+  29: {name:'وردي',    hex:'#ff44aa'},
+};
+
+const ZEROS = [14.1347,21.0220,25.0109,30.4249,32.9351,
+               37.5862,40.9187,43.3271,48.0052,49.7738,
+               52.9703,56.4462,59.3470,60.8318,65.1125,
+               67.0798,69.5465,72.0672,75.7047,77.1448];
+
+function isPrime(n){
+  if(n<2)return false; if(n===2)return true;
+  if(n%2===0)return false;
+  for(let i=3;i<=Math.sqrt(n);i+=2)if(n%i===0)return false;
+  return true;
+}
+
+// بناء الأعداد الأولية
+const primesInNetwork = [];
+for(let p=2;p<3000;p++){
+  if(isPrime(p) && R.includes(p%30)) primesInNetwork.push(p);
+}
+
+// حساب الإحداثيات
+const primeData = primesInNetwork.map(p=>{
+  const r = p%30;
+  const tau_r = TAU[r];
+  const lnp = Math.log(p);
+  const power = Math.pow(p,-0.5);
+  
+  let totalResonance = 0;
+  let dominantZero = ZEROS[0];
+  let minContrib = Infinity;
+  const resonances = {};
+  
+  ZEROS.forEach(gamma=>{
+    const phase = (gamma+tau_r)*lnp;
+    const cosVal = Math.cos(phase);
+    const contrib = power*cosVal;
+    resonances[gamma] = contrib;
+    if(cosVal<0) totalResonance += Math.abs(contrib);
+    if(contrib < minContrib){ minContrib=contrib; dominantZero=gamma; }
+  });
+  
+  return {p, r, tau_r, lnp, power, totalResonance, dominantZero, resonances};
+});
+
+// سلاسل الرنين
+const chains = {};
+ZEROS.forEach(g=>{ chains[g]=[]; });
+primeData.forEach(d=>{ if(chains[d.dominantZero]) chains[d.dominantZero].push(d.p); });
+
+// ============================================================
+// Three.js style 3D con canvas 2D
+// ============================================================
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W,H;
+function resize(){
+  const wrap = document.getElementById('canvas-wrap');
+  W = canvas.width  = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+}
+resize();
+window.addEventListener('resize',()=>{ resize(); });
+
+// Camera
+let rotX = 0.35, rotY = 0.5, rotZ = 0;
+let zoom = 1;
+let autoRotate = true;
+
+// Drag
+let dragging=false, lastMX=0, lastMY=0;
+canvas.addEventListener('mousedown',e=>{ dragging=true; lastMX=e.clientX; lastMY=e.clientY; });
+window.addEventListener('mouseup',()=>{ dragging=false; });
+window.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  rotY += (e.clientX-lastMX)*0.008;
+  rotX += (e.clientY-lastMY)*0.008;
+  lastMX=e.clientX; lastMY=e.clientY;
+  autoRotate=false;
+  document.getElementById('btn-auto').classList.remove('active-btn');
+});
+canvas.addEventListener('wheel',e=>{
+  zoom *= e.deltaY>0 ? 0.93 : 1.07;
+  zoom = Math.max(0.3,Math.min(3,zoom));
+  e.preventDefault();
+},{passive:false});
+
+// نطاق البيانات
+const allX = primeData.map(d=>d.lnp);
+const allY = primeData.map(d=>d.tau_r);
+const allZ = primeData.map(d=>d.totalResonance);
+const minX=Math.min(...allX), maxX=Math.max(...allX);
+const minY=Math.min(...allY), maxY=Math.max(...allY);
+const minZ=0, maxZ=Math.max(...allZ);
+
+function norm(v,mn,mx){ return (v-mn)/(mx-mn)*2-1; }
+
+function project(x3,y3,z3){
+  // تطبيق الدوران
+  let x=x3,y=y3,z=z3;
+  // حول Y
+  let cx=x*Math.cos(rotY)-z*Math.sin(rotY);
+  let cz=x*Math.sin(rotY)+z*Math.cos(rotY);
+  x=cx; z=cz;
+  // حول X
+  let cy=y*Math.cos(rotX)-z*Math.sin(rotX);
+  let bz=y*Math.sin(rotX)+z*Math.cos(rotX);
+  y=cy; z=bz;
+  // Perspective
+  const fov=600*zoom;
+  const zOff=4;
+  const scale=fov/(fov+z*200+zOff);
+  return { sx:W/2+x*200*scale, sy:H/2-y*200*scale, scale, z };
+}
+
+// فلاتر الألوان
+const activeWaves = new Set(R);
+let showZeros = false;
+let showChains = false;
+let selectedZero = null;
+let selectedPrime = null;
+
+// بناء الـ UI
+const colorFiltersEl = document.getElementById('color-filters');
+R.forEach(r=>{
+  const info = WAVE_INFO[r];
+  const div = document.createElement('div');
+  div.className='color-item active';
+  div.style.color = info.hex;
+  div.innerHTML=`<div class="dot" style="background:${info.hex}"></div>${info.name} (${r})`;
+  div.addEventListener('click',()=>{
+    if(activeWaves.has(r)){ activeWaves.delete(r); div.classList.remove('active'); }
+    else { activeWaves.add(r); div.classList.add('active'); }
+  });
+  colorFiltersEl.appendChild(div);
+});
+
+// قائمة الأصفار
+const zeroListEl = document.getElementById('zero-list');
+ZEROS.forEach(g=>{
+  const div = document.createElement('div');
+  div.className='zero-item';
+  const cnt = (chains[g]||[]).length;
+  div.innerHTML=`<span class="zero-gamma">γ = ${g.toFixed(4)}</span><span class="zero-count">${cnt} عدد أولي</span>`;
+  div.addEventListener('click',()=>{
+    selectedZero = selectedZero===g ? null : g;
+    document.querySelectorAll('.zero-item').forEach(el=>el.classList.remove('active'));
+    if(selectedZero) div.classList.add('active');
+  });
+  zeroListEl.appendChild(div);
+});
+
+// إحصاء
+document.getElementById('s-primes').textContent = primeData.length;
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e,d){
+  tooltip.style.display='block';
+  tooltip.style.left=(e.clientX+15)+'px';
+  tooltip.style.top =(e.clientY-10)+'px';
+  document.getElementById('tt-p').textContent=d.p;
+  document.getElementById('tt-p').style.color=WAVE_INFO[d.r].hex;
+  document.getElementById('tt-info').innerHTML=
+    `موجة: ${WAVE_INFO[d.r].name}<br>ln(p)=${d.lnp.toFixed(4)}<br>τ=${d.tau_r.toFixed(5)}<br>رنين=${d.totalResonance.toFixed(4)}<br>صفر: γ=${d.dominantZero}`;
+}
+function hideTooltip(){ tooltip.style.display='none'; }
+
+// نقاط مُعالجة
+let projectedPoints = [];
+
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  let hit=null, minD=Infinity;
+  projectedPoints.forEach(pp=>{
+    const d=Math.hypot(pp.sx-mx,pp.sy-my);
+    if(d<10&&d<minD){ minD=d; hit=pp; }
+  });
+  if(hit){ showTooltip(e,hit.data); canvas.style.cursor='pointer'; }
+  else { hideTooltip(); canvas.style.cursor=dragging?'grabbing':'grab'; }
+});
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  let hit=null, minD=Infinity;
+  projectedPoints.forEach(pp=>{
+    const d=Math.hypot(pp.sx-mx,pp.sy-my);
+    if(d<12&&d<minD){ minD=d; hit=pp; }
+  });
+  if(hit){ selectPrime(hit.data); }
+});
+
+function selectPrime(d){
+  selectedPrime = d;
+  document.getElementById('s-selected').textContent = d.p;
+  const info = WAVE_INFO[d.r];
+  
+  // أعلى 5 أصفار رنيناً
+  const sortedZeros = ZEROS.slice().sort((a,b)=>d.resonances[a]-d.resonances[b]);
+  const topZeros = sortedZeros.slice(0,5);
+  
+  let html=`
+    <div class="prime-card selected">
+      <div class="prime-number" style="color:${info.hex}">${d.p}</div>
+      <div class="prime-wave">
+        <div class="dot" style="background:${info.hex}"></div>
+        موجة ${info.name} · r = ${d.r}
+      </div>
+      <div class="prime-coords">
+        <div class="coord-row"><span class="coord-label">X = ln(p)</span><span class="coord-val">${d.lnp.toFixed(5)}</span></div>
+        <div class="coord-row"><span class="coord-label">Y = τ_r</span><span class="coord-val">${d.tau_r.toFixed(5)}</span></div>
+        <div class="coord-row"><span class="coord-label">Z = رنين</span><span class="coord-val">${d.totalResonance.toFixed(5)}</span></div>
+        <div class="coord-row"><span class="coord-label">p^{-½}</span><span class="coord-val">${d.power.toFixed(5)}</span></div>
+      </div>
+    </div>
+    <div class="prime-card">
+      <div style="font-size:.65rem;color:var(--dim);margin-bottom:.5rem">أقوى أصفار رنيناً</div>
+      ${topZeros.map(g=>`
+        <div class="coord-row" style="margin-bottom:.3rem">
+          <span class="coord-label">γ=${g.toFixed(4)}</span>
+          <span class="coord-val" style="color:${d.resonances[g]<0?'#ff6644':'#44ff88'}">${d.resonances[g].toFixed(5)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  document.getElementById('prime-details').innerHTML=html;
+}
+
+// أزرار
+document.getElementById('btn-auto').addEventListener('click',function(){
+  autoRotate=!autoRotate;
+  this.classList.toggle('active-btn',autoRotate);
+});
+document.getElementById('btn-zeros').addEventListener('click',function(){
+  showZeros=!showZeros;
+  this.classList.toggle('active-btn',showZeros);
+});
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  rotX=0.35; rotY=0.5; zoom=1; autoRotate=true;
+  document.getElementById('btn-auto').classList.add('active-btn');
+});
+document.getElementById('btn-chains').addEventListener('click',function(){
+  showChains=!showChains;
+  this.classList.toggle('active-btn',showChains);
+});
+
+// ============================================================
+// رسم المحاور
+// ============================================================
+function drawAxes(){
+  const axes=[
+    {from:[-1,-1,-1],to:[1,-1,-1],col:'#ff6644',lbl:'ln(p)'},
+    {from:[-1,-1,-1],to:[-1,1,-1],col:'#44ff88',lbl:'τ_r'},
+    {from:[-1,-1,-1],to:[-1,-1,1],col:'#4499ff',lbl:'رنين'},
+  ];
+  axes.forEach(ax=>{
+    const p0=project(...ax.from);
+    const p1=project(...ax.to);
+    ctx.beginPath();
+    ctx.moveTo(p0.sx,p0.sy);
+    ctx.lineTo(p1.sx,p1.sy);
+    ctx.strokeStyle=ax.col+'66';
+    ctx.lineWidth=1;
+    ctx.stroke();
+  });
+}
+
+// ============================================================
+// حلقة الرسم
+// ============================================================
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  
+  if(autoRotate) rotY+=0.003;
+  
+  drawAxes();
+  
+  projectedPoints=[];
+  const visible=[];
+  
+  primeData.forEach(d=>{
+    if(!activeWaves.has(d.r)) return;
+    if(selectedZero && !chains[selectedZero].includes(d.p)) return;
+    
+    const x=norm(d.lnp,minX,maxX);
+    const y=norm(d.tau_r,minY,maxY);
+    const z=norm(d.totalResonance,minZ,maxZ);
+    const pp=project(x,y,z);
+    
+    visible.push({...pp, data:d});
+    projectedPoints.push({...pp,data:d});
+  });
+  
+  // ترتيب حسب العمق
+  visible.sort((a,b)=>a.z-b.z);
+  
+  // رسم خطوط السلاسل
+  if(showChains && selectedZero){
+    const chain=chains[selectedZero]||[];
+    const chainPoints=visible.filter(pp=>chain.includes(pp.data.p));
+    if(chainPoints.length>1){
+      chainPoints.sort((a,b)=>a.data.lnp-b.data.lnp);
+      ctx.beginPath();
+      ctx.moveTo(chainPoints[0].sx,chainPoints[0].sy);
+      chainPoints.forEach(pp=>ctx.lineTo(pp.sx,pp.sy));
+      ctx.strokeStyle='rgba(100,180,255,0.2)';
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+  }
+  
+  // رسم أصفار زيتا
+  if(showZeros){
+    ZEROS.forEach(gamma=>{
+      // نقاط الأصفار في فضاء (gamma, 0, 0)
+      const xg=norm(gamma,10,80)*0.9;
+      const pp=project(xg,0.8,0.8);
+      
+      const isActive=selectedZero===gamma;
+      ctx.beginPath();
+      ctx.arc(pp.sx,pp.sy,isActive?10:6,0,Math.PI*2);
+      ctx.fillStyle=isActive?'rgba(255,220,50,.9)':'rgba(255,220,50,.4)';
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,220,50,.8)';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+      
+      if(pp.scale>0.7){
+        ctx.fillStyle='rgba(255,220,50,.9)';
+        ctx.font=`${Math.round(9*pp.scale)}px IBM Plex Mono`;
+        ctx.textAlign='center';
+        ctx.fillText(`γ=${gamma.toFixed(2)}`,pp.sx,pp.sy-12);
+      }
+    });
+  }
+  
+  // رسم الأعداد الأولية
+  visible.forEach(pp=>{
+    const d=pp.data;
+    const info=WAVE_INFO[d.r];
+    const isSelected=selectedPrime&&selectedPrime.p===d.p;
+    const isInChain=selectedZero&&chains[selectedZero].includes(d.p);
+    
+    const baseR=Math.max(2,d.power*30*pp.scale*zoom);
+    const r=isSelected?baseR*2:isInChain?baseR*1.5:baseR;
+    
+    // هالة
+    if(isSelected||isInChain){
+      ctx.beginPath();
+      ctx.arc(pp.sx,pp.sy,r*2.5,0,Math.PI*2);
+      const grad=ctx.createRadialGradient(pp.sx,pp.sy,0,pp.sx,pp.sy,r*2.5);
+      grad.addColorStop(0,info.hex+'44');
+      grad.addColorStop(1,'transparent');
+      ctx.fillStyle=grad;
+      ctx.fill();
+    }
+    
+    // النقطة الرئيسية
+    ctx.beginPath();
+    ctx.arc(pp.sx,pp.sy,r,0,Math.PI*2);
+    
+    const alpha=isSelected?1:isInChain?0.9:selectedZero?0.2:0.75;
+    ctx.fillStyle=info.hex+(Math.round(alpha*255).toString(16).padStart(2,'0'));
+    ctx.fill();
+    
+    if(isSelected){
+      ctx.strokeStyle=info.hex;
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+    
+    // رقم العدد الأولي للنقاط الكبيرة
+    if(r>6&&(isSelected||isInChain)){
+      ctx.fillStyle='rgba(200,230,255,.9)';
+      ctx.font=`bold ${Math.round(10*pp.scale)}px IBM Plex Mono`;
+      ctx.textAlign='center';
+      ctx.fillText(d.p,pp.sx,pp.sy-r-4);
+    }
+  });
+  
+  // تحديث العداد
+  document.getElementById('s-visible').textContent=visible.length;
+  
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

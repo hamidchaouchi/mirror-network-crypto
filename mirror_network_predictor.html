@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>شبكة المرآة — محرك التنبؤ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=Tajawal:wght@300;400;700&display=swap');
+:root{--bg:#020408;--panel:#060b12;--border:#0d1e35;--text:#7aa8cc;--bright:#c0dff8;--dim:#1e3a58;--gold:#f0c040;--green:#30e090;--red:#ff4455;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,60,140,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,60,140,.03) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0;}
+header{position:relative;z-index:1;padding:1rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1.2rem;}
+.logo{width:40px;height:40px;border:2px solid #00cccc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#00cccc;animation:pulse 3s ease-in-out infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{box-shadow:0 0 18px rgba(0,200,200,.25);}50%{box-shadow:0 0 36px rgba(0,200,200,.55);}}
+h1{font-family:'Tajawal',sans-serif;font-size:1.3rem;font-weight:700;color:var(--bright);}
+.subtitle{font-size:.62rem;color:var(--dim);margin-top:.15rem;}
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:1fr 360px;height:calc(100vh - 64px);}
+#cw{position:relative;overflow:hidden;background:radial-gradient(ellipse at 35% 40%,#030d1e 0%,var(--bg) 75%);}
+canvas{display:block;width:100%;height:100%;cursor:grab;}canvas:active{cursor:grabbing;}
+.ax{position:absolute;font-size:.58rem;color:var(--dim);pointer-events:none;letter-spacing:.05em;}
+.ax-x{bottom:2.2rem;right:2rem;color:#ff6644;}.ax-y{top:1.5rem;left:2rem;color:#44ff88;}.ax-z{top:50%;left:.6rem;transform:translateY(-50%);color:#4499ff;writing-mode:vertical-rl;}
+.sb{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.ss{padding:.8rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ss h3{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.55rem;}
+.tabs{display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:.55rem;}
+.tab{flex:1;padding:.28rem;font-size:.6rem;text-align:center;cursor:pointer;background:transparent;border:none;color:var(--dim);font-family:inherit;transition:all .15s;}
+.tab:hover{color:var(--text);}.tab.on{background:rgba(0,100,200,.25);color:var(--bright);}
+.tc{display:none;}.tc.on{display:block;}
+.ir{display:flex;gap:.35rem;align-items:center;margin-bottom:.35rem;}
+.ir label{font-size:.62rem;color:var(--text);white-space:nowrap;min-width:55px;}
+input[type=number]{flex:1;background:rgba(0,40,80,.4);border:1px solid var(--border);border-radius:3px;color:var(--bright);padding:.28rem .5rem;font-family:inherit;font-size:.7rem;outline:none;}
+input:focus{border-color:#00cccc;}
+.br{display:flex;gap:.35rem;margin-top:.35rem;}
+.ba{flex:1;background:rgba(0,70,150,.2);border:1px solid var(--border);color:var(--text);padding:.3rem;border-radius:3px;font-family:inherit;font-size:.62rem;cursor:pointer;transition:all .15s;text-align:center;}
+.ba:hover{background:rgba(0,100,200,.35);color:var(--bright);}
+.ba.p{border-color:#3377ff;color:var(--bright);background:rgba(0,80,200,.25);}
+.ba.p:hover{background:rgba(0,100,220,.4);}
+#pr{margin-top:.4rem;max-height:130px;overflow-y:auto;}
+.pi{display:flex;justify-content:space-between;align-items:center;padding:.2rem .35rem;border-radius:3px;font-size:.66rem;margin-bottom:1px;cursor:pointer;transition:background .12s;}
+.pi:hover{background:rgba(255,255,255,.04);}.pi.hl{background:rgba(0,100,200,.12);border-left:2px solid var(--gold);}
+.pn{color:var(--bright);font-weight:600;}.pm{font-size:.58rem;color:var(--dim);}
+.pc{font-size:.58rem;}.pc.h{color:var(--green);}.pc.m{color:var(--gold);}.pc.l{color:var(--red);}
+.lr{margin-top:.35rem;padding:.45rem .65rem;background:rgba(0,60,120,.1);border:1px solid var(--border);border-radius:4px;font-size:.68rem;min-height:2rem;}
+.lkp{font-size:1.2rem;color:var(--bright);font-weight:600;}
+.lki{color:var(--dim);font-size:.6rem;margin-top:.18rem;line-height:1.65;}
+.sr{display:flex;align-items:center;gap:.45rem;margin-top:.3rem;}
+.sl{font-size:.6rem;color:var(--dim);}
+.sb2{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.sf{height:100%;border-radius:2px;transition:width .4s ease,background .4s;}
+.sv{font-size:.6rem;font-weight:600;min-width:38px;}
+.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:.2rem;margin-bottom:.4rem;}
+.stb{background:rgba(0,40,80,.3);border:1px solid var(--border);border-radius:3px;color:var(--dim);padding:.22rem 0;font-family:inherit;font-size:.6rem;cursor:pointer;text-align:center;transition:all .12s;}
+.stb:hover{border-color:var(--text);color:var(--text);}.stb.on{background:rgba(0,100,200,.3);border-color:#3377ff;color:var(--bright);}
+.stb.best{border-color:var(--gold);color:var(--gold);}.stb.best.on{background:rgba(200,150,0,.2);}
+.nt{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .45rem;border-radius:3px;font-size:.6rem;font-weight:600;border:1px solid;}
+.nt.ok{color:var(--green);border-color:rgba(48,224,144,.3);background:rgba(48,224,144,.06);}
+.nt.warn{color:var(--gold);border-color:rgba(240,192,64,.3);background:rgba(240,192,64,.06);}
+.nt.bad{color:var(--red);border-color:rgba(255,68,85,.3);background:rgba(255,68,85,.06);}
+.wg{display:grid;grid-template-columns:1fr 1fr;gap:.22rem;}
+.wi{display:flex;align-items:center;gap:.32rem;padding:.25rem .38rem;border-radius:3px;border:1px solid transparent;cursor:pointer;font-size:.62rem;transition:all .12s;}
+.wi:hover{background:rgba(255,255,255,.03);}.wi.on{border-color:currentColor;background:rgba(255,255,255,.04);}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.zs{max-height:120px;overflow-y:auto;}
+.zi{display:flex;justify-content:space-between;align-items:center;padding:.22rem .38rem;border-radius:3px;font-size:.62rem;cursor:pointer;transition:background .12s;}
+.zi:hover{background:rgba(255,255,255,.04);}.zi.on{background:rgba(0,140,255,.1);color:var(--bright);}
+.zg{color:var(--bright);font-weight:600;}.zc{color:var(--dim);font-size:.57rem;}
+#pi2{flex:1;overflow-y:auto;padding:.85rem 1rem;}
+#pi2 h3{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.65rem;}
+.pc2{background:rgba(0,60,120,.1);border:1px solid var(--border);border-radius:5px;padding:.7rem;margin-bottom:.4rem;}
+.pc2.sel{border-color:var(--bright);background:rgba(0,100,200,.12);}
+.pnum{font-size:1.35rem;color:var(--bright);font-weight:600;line-height:1;}
+.pwv{font-size:.62rem;margin-top:.2rem;display:flex;align-items:center;gap:.32rem;}
+.pco{margin-top:.55rem;font-size:.6rem;line-height:1.85;}
+.pr2{display:flex;justify-content:space-between;}
+.pl{color:var(--dim);}.pv{color:var(--bright);font-weight:600;}
+.sts{display:grid;grid-template-columns:1fr 1fr;gap:.28rem;}
+.st{background:rgba(0,50,100,.15);border:1px solid var(--border);border-radius:3px;padding:.38rem;text-align:center;}
+.sv2{font-size:.9rem;color:var(--bright);font-weight:600;}.sl2{font-size:.54rem;color:var(--dim);margin-top:.1rem;}
+.ctr{padding:.55rem 1rem;border-top:1px solid var(--border);display:flex;gap:.3rem;flex-wrap:wrap;flex-shrink:0;}
+.cb{background:rgba(0,60,140,.2);border:1px solid var(--border);color:var(--text);padding:.26rem .6rem;border-radius:3px;font-family:inherit;font-size:.6rem;cursor:pointer;transition:all .12s;}
+.cb:hover{background:rgba(0,100,200,.3);color:var(--bright);}.cb.on{background:rgba(0,100,200,.4);border-color:#4499ff;color:var(--bright);}
+#tt{position:fixed;background:rgba(6,11,18,.97);border:1px solid var(--border);border-radius:4px;padding:.48rem .75rem;font-size:.63rem;pointer-events:none;display:none;z-index:200;max-width:200px;}
+#ttp{font-size:1rem;color:var(--bright);font-weight:600;}#tti{color:var(--text);margin-top:.18rem;line-height:1.6;}
+#ss2{margin-top:.35rem;font-size:.6rem;color:var(--dim);line-height:1.55;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--panel);}::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <div>
+    <h1>شبكة المرآة — محرك التنبؤ بالأعداد الأولية</h1>
+    <div class="subtitle">Mirror Network · Structure Selection + Summation · Prime Engine · H. Chaouchi 2026</div>
+  </div>
+</header>
+<div class="layout">
+  <div id="cw">
+    <canvas id="c"></canvas>
+    <div class="ax ax-x">X = ln(p)</div>
+    <div class="ax ax-y">Y = τ_r</div>
+    <div class="ax ax-z">Z = رنين</div>
+  </div>
+  <div class="sb">
+    <div class="ss">
+      <h3>⟁ محرك التنبؤ</h3>
+      <div class="tabs">
+        <button class="tab on" data-tab="tl">قائمة</button>
+        <button class="tab" data-tab="ts">عدد واحد</button>
+        <button class="tab" data-tab="th">الهياكل</button>
+      </div>
+      <!-- قائمة -->
+      <div class="tc on" id="tl">
+        <div class="ir"><label>بعد:</label><input type="number" id="ia" value="100" min="2" max="999983"></div>
+        <div class="ir"><label>عدد:</label><input type="number" id="ic" value="10" min="1" max="30"></div>
+        <div class="br">
+          <button class="ba p" id="bp">▶ تنبؤ</button>
+          <button class="ba" id="bv">✓ تحقق</button>
+        </div>
+        <div id="pr"></div>
+      </div>
+      <!-- عدد واحد -->
+      <div class="tc" id="ts">
+        <div class="ir"><label>أدخل n:</label><input type="number" id="in2" value="50" min="2" max="999983"></div>
+        <div style="font-size:.6rem;color:var(--dim);margin-bottom:.35rem;">هيكل: <span id="san" style="color:var(--gold)">مجموع {31,37,41,47}</span></div>
+        <div class="br">
+          <button class="ba p" id="bcs">▶ F_m(n)</button>
+          <button class="ba" id="bna">★ أقرب أولي</button>
+        </div>
+        <div class="lr" id="lr"><span style="color:var(--dim);font-size:.63rem;">أدخل رقماً واضغط حساب</span></div>
+        <div class="sr">
+          <span class="sl">إشارة:</span>
+          <div class="sb2"><div class="sf" id="sf" style="width:0%;background:var(--green)"></div></div>
+          <span class="sv" id="sv" style="color:var(--dim)">—</span>
+        </div>
+      </div>
+      <!-- هياكل -->
+      <div class="tc" id="th">
+        <div style="font-size:.6rem;color:var(--dim);margin-bottom:.35rem;">★ = الأقوى إشارةً — اختر للدمج</div>
+        <div class="sg" id="sg"></div>
+        <div class="br">
+          <button class="ba" id="bb4">★ أفضل 4</button>
+          <button class="ba" id="bal">الكل</button>
+          <button class="ba" id="bno">لا شيء</button>
+        </div>
+        <div style="margin-top:.4rem;font-size:.58rem;color:var(--dim);">مستوى الضجيج:</div>
+        <div style="display:flex;flex-direction:column;gap:.18rem;margin-top:.2rem;font-size:.58rem;">
+          <div style="display:flex;justify-content:space-between;"><span>2–99,999</span><span class="nt ok">منخفض ✓</span></div>
+          <div style="display:flex;justify-content:space-between;"><span>100K–999,983</span><span class="nt warn">متوسط ⚠</span></div>
+          <div style="display:flex;justify-content:space-between;"><span>&gt;999,983</span><span class="nt bad">مرتفع ✗</span></div>
+        </div>
+        <div id="ss2"></div>
+      </div>
+      <div style="margin-top:.35rem;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:.58rem;color:var(--dim);">حدّ 6 خانات:</span>
+        <span class="nt ok" id="ntag">منخفض ✓</span>
+      </div>
+    </div>
+    <div class="ss">
+      <h3>الموجات — mod 30</h3>
+      <div class="wg" id="wf"></div>
+    </div>
+    <div class="ss">
+      <h3>إحصاءات</h3>
+      <div class="sts">
+        <div class="st"><div class="sv2" id="sp">0</div><div class="sl2">أعداد أولية</div></div>
+        <div class="st"><div class="sv2">20</div><div class="sl2">أصفار زيتا</div></div>
+        <div class="st"><div class="sv2" id="sv3">0</div><div class="sl2">مرئي</div></div>
+        <div class="st"><div class="sv2" id="ssel">—</div><div class="sl2">مختار</div></div>
+      </div>
+    </div>
+    <div class="ss" style="flex-shrink:0;">
+      <h3>سلاسل الرنين — أصفار زيتا</h3>
+      <div class="zs"><div id="zl"></div></div>
+    </div>
+    <div id="pi2">
+      <h3>تفاصيل العدد الأولي</h3>
+      <div id="pd"><div style="color:var(--dim);font-size:.68rem;margin-top:.7rem;line-height:1.65;">انقر على أي نقطة<br>لرؤية تفاصيلها</div></div>
+    </div>
+    <div class="ctr">
+      <button class="cb on" id="bau">⟳ دوران</button>
+      <button class="cb" id="bzo">◎ أصفار</button>
+      <button class="cb" id="bch">⛓ سلاسل</button>
+      <button class="cb on" id="bps">★ مُتنبَّأ</button>
+      <button class="cb" id="brs">↺ إعادة</button>
+    </div>
+  </div>
+</div>
+<div id="tt"><div id="ttp"></div><div id="tti"></div></div>
+
+<script>
+// ===== ثوابت =====
+const R30=[1,7,11,13,17,19,23,29];
+const T30={1:-0.183282,7:-0.033344,11:-0.090864,13:-0.108293,17:-0.135950,19:-0.162457,23:-0.151711,29:-0.167249};
+const WI={1:{n:'أحمر',h:'#ff3333'},7:{n:'برتقالي',h:'#ff7700'},11:{n:'أصفر',h:'#ffdd00'},13:{n:'أخضر',h:'#00cc44'},17:{n:'فيروزي',h:'#00cccc'},19:{n:'أزرق',h:'#3377ff'},23:{n:'بنفسجي',h:'#aa44ff'},29:{n:'وردي',h:'#ff44aa'}};
+const ZEROS=[14.1347,21.0220,25.0109,30.4249,32.9351,37.5862,40.9187,43.3271,48.0052,49.7738,52.9703,56.4462,59.3470,60.8318,65.1125,67.0798,69.5465,72.0672,75.7047,77.1448];
+const LIM=999983;
+
+// الهياكل المتاحة
+const STRUCTS=[
+  {m:5,s:-0.53},{m:7,s:-0.83},{m:11,s:-1.01},{m:13,s:-1.16},{m:17,s:-1.28},
+  {m:19,s:-1.33},{m:23,s:-1.38},{m:29,s:-1.44},{m:31,s:-1.46,b:true},
+  {m:37,s:-1.54,b:true},{m:41,s:-1.56,b:true},{m:43,s:-1.57},{m:47,s:-1.63,b:true},
+  {m:53,s:-1.60},{m:59,s:-1.56},{m:61,s:-1.61},{m:67,s:-1.64},{m:71,s:-1.63},
+  {m:73,s:-1.66},{m:79,s:-1.68},{m:83,s:-1.68},{m:89,s:-1.69},{m:97,s:-1.65},
+  {m:101,s:-1.64},{m:103,s:-1.67},{m:107,s:-1.73},{m:109,s:-1.78},{m:113,s:-1.82}
+];
+
+// ===== غربال =====
+function sieve(N){const s=new Uint8Array(N+1).fill(1);s[0]=s[1]=0;for(let i=2;i*i<=N;i++)if(s[i])for(let j=i*i;j<=N;j+=i)s[j]=0;const r=[];for(let i=2;i<=N;i++)if(s[i])r.push(i);return r;}
+function isPrime(n){if(n<2)return false;if(n===2)return true;if(n%2===0)return false;for(let i=3;i*i<=n;i+=2)if(n%i===0)return false;return true;}
+function gcd(a,b){while(b){[a,b]=[b,a%b];}return a;}
+
+const PV=sieve(3000).filter(p=>R30.includes(p%30));
+const PC=sieve(20000);
+
+// ===== tau لكل هيكل =====
+const SD={};
+STRUCTS.forEach(({m})=>{
+  const res=[];for(let r=1;r<m;r++)if(gcd(r,m)===1)res.push(r);
+  const phi=res.length,Sr={};res.forEach(r=>Sr[r]=0);
+  PC.forEach(p=>{if(p>5000||p===m)return;const r=p%m;if(r in Sr)Sr[r]+=1/p;});
+  const lnlnN=Math.log(Math.log(5000)),M=0.2614972128,tau={};
+  res.forEach(r=>tau[r]=Sr[r]-lnlnN/phi-M/phi);
+  SD[m]={res,tau};
+});
+
+// ===== F دوال =====
+function Fm(m,t,Pmax=500){
+  const{tau}=SD[m];let F=0;
+  for(const p of PC){if(p>Pmax||p===m)break;const r=p%m;if(r in tau)F+=Math.cos((t+tau[r])*Math.log(p))/Math.sqrt(p);}
+  return F;
+}
+function Fsum(ms,t,Pmax=500){
+  if(!ms.length)return 0;
+  return ms.reduce((a,m)=>a+Fm(m,t,Pmax),0)/ms.length;
+}
+
+// ===== الهياكل المختارة =====
+let AS=new Set([31,37,41,47]);
+
+const sgEl=document.getElementById('sg');
+STRUCTS.forEach(({m,b})=>{
+  const btn=document.createElement('button');
+  btn.className='stb'+(b?' best':'')+(AS.has(m)?' on':'');
+  btn.textContent=m+(b?'★':'');btn.dataset.m=m;
+  btn.addEventListener('click',()=>{
+    if(AS.has(m)){AS.delete(m);btn.classList.remove('on');}
+    else{AS.add(m);btn.classList.add('on');}
+    updSS();updSAN();
+  });
+  sgEl.appendChild(btn);
+});
+
+function updSS(){
+  const ms=[...AS].sort((a,b)=>a-b);
+  const el=document.getElementById('ss2');
+  if(!ms.length){el.textContent='⚠ لم يُختَر هيكل';return;}
+  const avg=ms.reduce((a,m)=>{const st=STRUCTS.find(x=>x.m===m);return a+(st?st.s:0);},0)/ms.length;
+  el.innerHTML=`مختار: <span style="color:var(--bright)">${ms.slice(0,8).join(',')}${ms.length>8?'…':''}</span><br>إشارة: <span style="color:${avg<-1.5?'var(--green)':avg<-1?'var(--gold)':'var(--red)'}">${avg.toFixed(3)}</span> (${ms.length} هيكل)`;
+}
+function updSAN(){
+  const ms=[...AS].sort((a,b)=>a-b);
+  document.getElementById('san').textContent=ms.length===0?'—':ms.length===1?`m=${ms[0]}`:`مجموع {${ms.slice(0,4).join(',')}${ms.length>4?'…':''}}`;
+}
+document.getElementById('bb4').addEventListener('click',()=>{AS=new Set([31,37,41,47]);document.querySelectorAll('.stb').forEach(b=>b.classList.toggle('on',AS.has(+b.dataset.m)));updSS();updSAN();});
+document.getElementById('bal').addEventListener('click',()=>{STRUCTS.forEach(({m})=>AS.add(m));document.querySelectorAll('.stb').forEach(b=>b.classList.add('on'));updSS();updSAN();});
+document.getElementById('bno').addEventListener('click',()=>{AS=new Set();document.querySelectorAll('.stb').forEach(b=>b.classList.remove('on'));updSS();updSAN();});
+updSS();updSAN();
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    const id=t.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.tc').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');document.getElementById(id).classList.add('on');
+  });
+});
+
+// ===== تنبؤ قائمة =====
+let PP=[],LR2=[];
+
+function predictList(after,count){
+  const ms=[...AS];
+  if(!ms.length)return{results:[],warn:'لم يُختَر هيكل'};
+  if(after>LIM)return{results:[],warn:'تجاوز حد 6 خانات'};
+  const step=0.04,tS=Math.max(0.5,Math.log(after)-0.25),tE=Math.log(Math.min(after+15000,LIM))+0.25;
+  const tr=[],fv=[];
+  for(let t=tS;t<=tE;t+=step){tr.push(t);fv.push(Fsum(ms,t));}
+  const minima=[];
+  for(let i=2;i<fv.length-2;i++)
+    if(fv[i]<fv[i-1]&&fv[i]<fv[i+1]&&fv[i]<fv[i-2]&&fv[i]<fv[i+2]&&fv[i]<-0.65)
+      minima.push({t:tr[i],f:fv[i]});
+  const merged=[];let i=0;
+  while(i<minima.length){
+    let g=[minima[i]];
+    while(i+1<minima.length&&minima[i+1].t-minima[i].t<0.35){i++;g.push(minima[i]);}
+    merged.push(g.reduce((a,b)=>a.f<b.f?a:b));i++;
+  }
+  const results=[];
+  merged.forEach(({t,f})=>{
+    const pE=Math.round(Math.exp(t));
+    for(let d=-25;d<=25;d++){
+      const c=pE+d;
+      if(c>after&&c<=LIM&&isPrime(c)&&!results.some(r=>r.p===c)){
+        results.push({p:c,conf:Math.min(99,Math.round((-f/2.8)*100)),f});break;
+      }
+    }
+  });
+  results.sort((a,b)=>a.p-b.p);
+  return{results:results.slice(0,count)};
+}
+
+document.getElementById('bp').addEventListener('click',()=>{
+  const after=+document.getElementById('ia').value||100;
+  const count=+document.getElementById('ic').value||10;
+  const re=document.getElementById('pr'),nt=document.getElementById('ntag');
+  if(after>LIM){nt.className='nt bad';nt.textContent='مرتفع ✗';re.innerHTML='<div style="color:var(--red);font-size:.63rem;padding:.25rem">⚠ تجاوزت حد 6 خانات</div>';return;}
+  nt.className=after>99999?'nt warn':'nt ok';nt.textContent=after>99999?'متوسط ⚠':'منخفض ✓';
+  re.innerHTML='<div style="color:var(--dim);font-size:.61rem;padding:.22rem">⟳ جارٍ الحساب…</div>';
+  setTimeout(()=>{
+    const{results,warn}=predictList(after,count);
+    if(warn){re.innerHTML=`<div style="color:var(--red);font-size:.61rem;padding:.22rem">⚠ ${warn}</div>`;return;}
+    if(!results.length){re.innerHTML='<div style="color:var(--dim);font-size:.61rem;padding:.22rem">لا نتائج</div>';return;}
+    LR2=results;PP=results.filter(r=>r.p<=3000);
+    let h='';
+    results.forEach(({p,conf})=>{
+      const r30=p%30,inf=WI[r30]||{h:'#c0dff8'};
+      const cl=conf>70?'h':conf>40?'m':'l';
+      h+=`<div class="pi" data-p="${p}"><span class="pn" style="color:${inf.h}">${p}</span><span class="pm">r=${r30}</span><span class="pc ${cl}">${conf}%</span></div>`;
+    });
+    re.innerHTML=h;
+    re.querySelectorAll('.pi').forEach(el=>{
+      el.addEventListener('click',()=>{
+        re.querySelectorAll('.pi').forEach(x=>x.classList.remove('hl'));
+        el.classList.add('hl');document.getElementById('ssel').textContent=el.dataset.p;
+      });
+    });
+  },30);
+});
+
+document.getElementById('bv').addEventListener('click',()=>{
+  document.querySelectorAll('.pi').forEach(el=>{
+    const p=+el.dataset.p,mark=el.querySelector('.pc');
+    if(mark&&!mark.textContent.includes('✓')&&!mark.textContent.includes('?'))
+      mark.textContent+=isPrime(p)?' ✓':' ?';
+  });
+});
+
+// ===== حساب F لعدد واحد =====
+function updateSignal(fVal){
+  const pct=Math.min(100,Math.round((-fVal/3)*100));
+  const col=fVal<-1.5?'var(--green)':fVal<-0.8?'var(--gold)':'var(--red)';
+  document.getElementById('sf').style.width=pct+'%';
+  document.getElementById('sf').style.background=col;
+  document.getElementById('sv').textContent=fVal.toFixed(3);
+  document.getElementById('sv').style.color=col;
+  return col;
+}
+
+document.getElementById('bcs').addEventListener('click',()=>{
+  const n=+document.getElementById('in2').value||50;
+  const ms=[...AS];const lrEl=document.getElementById('lr');
+  if(!ms.length){lrEl.innerHTML='<span style="color:var(--red);font-size:.63rem;">اختر هيكلاً أولاً</span>';return;}
+  const t=Math.log(n),fVal=Fsum(ms,t);
+  const perM=ms.map(m=>({m,f:Fm(m,t)})).sort((a,b)=>a.f-b.f);
+  const col=updateSignal(fVal);
+  const nInt=Math.round(n),nIP=isPrime(nInt);
+  lrEl.innerHTML=`
+    <div style="display:flex;align-items:baseline;gap:.45rem;margin-bottom:.25rem;">
+      <span class="lkp">${nInt}</span>
+      <span style="color:${nIP?'var(--green)':'var(--dim)'};font-size:.62rem;">${nIP?'✓ أولي':'— مركب'}</span>
+    </div>
+    <div class="lki">
+      F_مجموع = <span style="color:${col};font-weight:600">${fVal.toFixed(5)}</span><br>
+      أقوى هيكل: <span style="color:var(--gold)">m=${perM[0].m}</span> (${perM[0].f.toFixed(4)})<br>
+      ${ms.length>1?`كل الهياكل: ${perM.slice(0,5).map(x=>`${x.m}→${x.f.toFixed(3)}`).join(' | ')}${perM.length>5?'…':''}`:''}</div>`;
+});
+
+document.getElementById('bna').addEventListener('click',()=>{
+  const n=+document.getElementById('in2').value||50;
+  const ms=[...AS];const lrEl=document.getElementById('lr');
+  if(!ms.length){lrEl.innerHTML='<span style="color:var(--red);font-size:.63rem;">اختر هيكلاً أولاً</span>';return;}
+  let best={p:n,f:0};
+  for(let d=-50;d<=300;d++){
+    const c=Math.round(n)+d;if(c<2||c>LIM)continue;
+    const fv=Fsum(ms,Math.log(c));if(fv<best.f)best={p:c,f:fv};
+  }
+  const r30=best.p%30,inf=WI[r30]||{h:'#c0dff8',n:'—'};
+  const real=isPrime(best.p),col=updateSignal(best.f);
+  lrEl.innerHTML=`
+    <div style="display:flex;align-items:baseline;gap:.45rem;margin-bottom:.25rem;">
+      <span class="lkp" style="color:${inf.h}">${best.p}</span>
+      <span style="color:${real?'var(--green)':'var(--gold)'};font-size:.62rem;">${real?'✓ أولي حقيقي':'~ مُقدَّر'}</span>
+    </div>
+    <div class="lki">
+      F_min = <span style="color:${col};font-weight:600">${best.f.toFixed(5)}</span><br>
+      موجة: <span style="color:${inf.h}">${inf.n}</span> · r=${r30}<br>
+      ln(${best.p}) = ${Math.log(best.p).toFixed(5)}</div>`;
+});
+
+// ===== بيانات العرض =====
+const PD=PV.map(p=>{
+  const r=p%30,tr=T30[r],lnp=Math.log(p),pw=Math.pow(p,-0.5);
+  let tR=0,dZ=ZEROS[0],mC=Infinity;const res={};
+  ZEROS.forEach(g=>{const c=pw*Math.cos((g+tr)*lnp);res[g]=c;if(c<0)tR+=Math.abs(c);if(c<mC){mC=c;dZ=g;}});
+  return{p,r,tau_r:tr,lnp,power:pw,totalRes:tR,dominantZero:dZ,resonances:res};
+});
+const CH={};ZEROS.forEach(g=>CH[g]=[]);
+PD.forEach(d=>{if(CH[d.dominantZero])CH[d.dominantZero].push(d.p);});
+
+// ===== UI الموجات والأصفار =====
+const AW=new Set(R30);
+const wfEl=document.getElementById('wf');
+R30.forEach(r=>{
+  const inf=WI[r],d=document.createElement('div');
+  d.className='wi on';d.style.color=inf.h;
+  d.innerHTML=`<div class="dot" style="background:${inf.h}"></div>${inf.n}(${r})`;
+  d.addEventListener('click',()=>{if(AW.has(r)){AW.delete(r);d.classList.remove('on');}else{AW.add(r);d.classList.add('on');}});
+  wfEl.appendChild(d);
+});
+let selZ=null,selP=null;
+const zlEl=document.getElementById('zl');
+ZEROS.forEach(g=>{
+  const d=document.createElement('div');d.className='zi';
+  d.innerHTML=`<span class="zg">γ=${g.toFixed(4)}</span><span class="zc">${(CH[g]||[]).length} عدد</span>`;
+  d.addEventListener('click',()=>{selZ=selZ===g?null:g;document.querySelectorAll('.zi').forEach(el=>el.classList.remove('on'));if(selZ)d.classList.add('on');});
+  zlEl.appendChild(d);
+});
+document.getElementById('sp').textContent=PD.length;
+
+// ===== CANVAS 3D =====
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H;
+function resize(){const w=document.getElementById('cw');W=canvas.width=w.clientWidth;H=canvas.height=w.clientHeight;}
+resize();window.addEventListener('resize',resize);
+let rX=0.35,rY=0.5,zm=1,aR=true,dr=false,lmx=0,lmy=0;
+canvas.addEventListener('mousedown',e=>{dr=true;lmx=e.clientX;lmy=e.clientY;});
+window.addEventListener('mouseup',()=>dr=false);
+window.addEventListener('mousemove',e=>{if(!dr)return;rY+=(e.clientX-lmx)*.008;rX+=(e.clientY-lmy)*.008;lmx=e.clientX;lmy=e.clientY;aR=false;document.getElementById('bau').classList.remove('on');});
+canvas.addEventListener('wheel',e=>{zm*=e.deltaY>0?.93:1.07;zm=Math.max(.3,Math.min(3,zm));e.preventDefault();},{passive:false});
+const aX=PD.map(d=>d.lnp),aY=PD.map(d=>d.tau_r),aZ=PD.map(d=>d.totalRes);
+const[mX,MX]=[Math.min(...aX),Math.max(...aX)],[mY,MY]=[Math.min(...aY),Math.max(...aY)],[mZ,MZ]=[0,Math.max(...aZ)];
+function nm(v,a,b){return(v-a)/(b-a)*2-1;}
+function proj(x3,y3,z3){
+  let x=x3,y=y3,z=z3;
+  let cx=x*Math.cos(rY)-z*Math.sin(rY),cz=x*Math.sin(rY)+z*Math.cos(rY);x=cx;z=cz;
+  let cy=y*Math.cos(rX)-z*Math.sin(rX),bz=y*Math.sin(rX)+z*Math.cos(rX);y=cy;z=bz;
+  const fov=600*zm,sc=fov/(fov+z*200+4);
+  return{sx:W/2+x*200*sc,sy:H/2-y*200*sc,scale:sc,z};
+}
+let shZ=false,shC=false,shP=true,pts=[];
+function drawAxes(){
+  [{f:[-1,-1,-1],t:[1,-1,-1],c:'#ff664466'},{f:[-1,-1,-1],t:[-1,1,-1],c:'#44ff8866'},{f:[-1,-1,-1],t:[-1,-1,1],c:'#4499ff66'}]
+  .forEach(ax=>{const p0=proj(...ax.f),p1=proj(...ax.t);ctx.beginPath();ctx.moveTo(p0.sx,p0.sy);ctx.lineTo(p1.sx,p1.sy);ctx.strokeStyle=ax.c;ctx.lineWidth=1;ctx.stroke();});
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);if(aR)rY+=.003;drawAxes();pts=[];
+  const vis=[];
+  PD.forEach(d=>{
+    if(!AW.has(d.r))return;if(selZ&&!CH[selZ].includes(d.p))return;
+    const pp=proj(nm(d.lnp,mX,MX),nm(d.tau_r,mY,MY),nm(d.totalRes,mZ,MZ));
+    vis.push({...pp,data:d});pts.push({...pp,data:d});
+  });
+  vis.sort((a,b)=>a.z-b.z);
+  if(shC&&selZ){const ch=CH[selZ]||[],cP=vis.filter(pp=>ch.includes(pp.data.p));if(cP.length>1){cP.sort((a,b)=>a.data.lnp-b.data.lnp);ctx.beginPath();ctx.moveTo(cP[0].sx,cP[0].sy);cP.forEach(pp=>ctx.lineTo(pp.sx,pp.sy));ctx.strokeStyle='rgba(80,160,255,.18)';ctx.lineWidth=1;ctx.stroke();}}
+  if(shZ){ZEROS.forEach(g=>{const xg=nm(g,10,80)*.9,pp=proj(xg,.85,.85),isA=selZ===g;ctx.beginPath();ctx.arc(pp.sx,pp.sy,isA?11:6,0,Math.PI*2);ctx.fillStyle=isA?'rgba(240,190,40,.92)':'rgba(240,190,40,.4)';ctx.fill();if(pp.scale>.7){ctx.fillStyle='rgba(240,190,40,.9)';ctx.font=`${Math.round(8*pp.scale)}px IBM Plex Mono`;ctx.textAlign='center';ctx.fillText(`γ=${g.toFixed(2)}`,pp.sx,pp.sy-13);}});}
+  if(shP&&PP.length){PP.forEach(({p})=>{const lnp=Math.log(p);if(lnp<mX||lnp>MX)return;const r=p%30,tr=T30[r]||T30[1],pp=proj(nm(lnp,mX,MX),nm(tr,mY,MY),nm(.5,mZ,MZ)),inf=WI[r]||{h:'#c0dff8'};ctx.beginPath();ctx.arc(pp.sx,pp.sy,13,0,Math.PI*2);const gr=ctx.createRadialGradient(pp.sx,pp.sy,0,pp.sx,pp.sy,13);gr.addColorStop(0,'rgba(240,190,40,.28)');gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.fill();ctx.beginPath();ctx.arc(pp.sx,pp.sy,5,0,Math.PI*2);ctx.strokeStyle='rgba(240,190,40,.82)';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=inf.h+'cc';ctx.fill();if(pp.scale>.52){ctx.fillStyle='rgba(240,190,40,.88)';ctx.font=`bold ${Math.round(9*pp.scale)}px IBM Plex Mono`;ctx.textAlign='center';ctx.fillText(p,pp.sx,pp.sy-11);}});}
+  vis.forEach(pp=>{
+    const d=pp.data,inf=WI[d.r],iS=selP&&selP.p===d.p,iC=selZ&&CH[selZ].includes(d.p);
+    const bR=Math.max(2,d.power*30*pp.scale*zm),r=iS?bR*2:iC?bR*1.5:bR;
+    if(iS||iC){ctx.beginPath();ctx.arc(pp.sx,pp.sy,r*2.5,0,Math.PI*2);const gr=ctx.createRadialGradient(pp.sx,pp.sy,0,pp.sx,pp.sy,r*2.5);gr.addColorStop(0,inf.h+'44');gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.fill();}
+    ctx.beginPath();ctx.arc(pp.sx,pp.sy,r,0,Math.PI*2);
+    const al=iS?1:iC?.9:selZ?.2:.72;
+    ctx.fillStyle=inf.h+(Math.round(al*255).toString(16).padStart(2,'0'));ctx.fill();
+    if(iS){ctx.strokeStyle=inf.h;ctx.lineWidth=2;ctx.stroke();}
+    if(r>6&&(iS||iC)){ctx.fillStyle='rgba(200,230,255,.9)';ctx.font=`bold ${Math.round(10*pp.scale)}px IBM Plex Mono`;ctx.textAlign='center';ctx.fillText(d.p,pp.sx,pp.sy-r-4);}
+  });
+  document.getElementById('sv3').textContent=vis.length;
+  requestAnimationFrame(draw);
+}
+
+// ===== Tooltip + Click =====
+const tt=document.getElementById('tt');
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  let hit=null,md=Infinity;
+  pts.forEach(pp=>{const d=Math.hypot(pp.sx-mx,pp.sy-my);if(d<10&&d<md){md=d;hit=pp;}});
+  if(hit){const d=hit.data,inf=WI[d.r];tt.style.display='block';tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px';document.getElementById('ttp').textContent=d.p;document.getElementById('ttp').style.color=inf.h;document.getElementById('tti').innerHTML=`موجة:${inf.n}<br>ln(p)=${d.lnp.toFixed(4)}<br>τ_r=${d.tau_r.toFixed(5)}<br>رنين=${d.totalRes.toFixed(4)}<br>γ_dom=${d.dominantZero.toFixed(4)}`;canvas.style.cursor='pointer';}
+  else{tt.style.display='none';canvas.style.cursor=dr?'grabbing':'grab';}
+});
+canvas.addEventListener('mouseleave',()=>tt.style.display='none');
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  let hit=null,md=Infinity;
+  pts.forEach(pp=>{const d=Math.hypot(pp.sx-mx,pp.sy-my);if(d<12&&d<md){md=d;hit=pp;}});
+  if(hit){const d=hit.data,inf=WI[d.r];selP=d;document.getElementById('ssel').textContent=d.p;
+    const tZ=ZEROS.slice().sort((a,b)=>d.resonances[a]-d.resonances[b]).slice(0,5);
+    document.getElementById('pd').innerHTML=`<div class="pc2 sel"><div class="pnum" style="color:${inf.h}">${d.p}</div><div class="pwv"><div class="dot" style="background:${inf.h}"></div>موجة ${inf.n}·r=${d.r}</div><div class="pco"><div class="pr2"><span class="pl">X=ln(p)</span><span class="pv">${d.lnp.toFixed(5)}</span></div><div class="pr2"><span class="pl">Y=τ_r</span><span class="pv">${d.tau_r.toFixed(5)}</span></div><div class="pr2"><span class="pl">Z=رنين</span><span class="pv">${d.totalRes.toFixed(5)}</span></div></div></div><div class="pc2"><div style="font-size:.58rem;color:var(--dim);margin-bottom:.3rem">رنين مع الأصفار</div>${tZ.map(g=>`<div class="pr2" style="margin-bottom:.22rem"><span class="pl">γ=${g.toFixed(4)}</span><span class="pv" style="color:${d.resonances[g]<0?'#ff6644':'#44ff88'}">${d.resonances[g].toFixed(5)}</span></div>`).join('')}</div>`;
+  }
+});
+
+// ===== أزرار عرض =====
+document.getElementById('bau').addEventListener('click',function(){aR=!aR;this.classList.toggle('on',aR);});
+document.getElementById('bzo').addEventListener('click',function(){shZ=!shZ;this.classList.toggle('on',shZ);});
+document.getElementById('bch').addEventListener('click',function(){shC=!shC;this.classList.toggle('on',shC);});
+document.getElementById('bps').addEventListener('click',function(){shP=!shP;this.classList.toggle('on',shP);});
+document.getElementById('brs').addEventListener('click',()=>{rX=.35;rY=.5;zm=1;aR=true;document.getElementById('bau').classList.add('on');});
+
+draw();
+</script>
+</body>
+</html>

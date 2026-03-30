@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محرك الأعداد الأولية — الشبكة المرآتية</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Kufi+Arabic:wght@300;400;700&display=swap');
+
+:root {
+  --bg:       #00050f;
+  --surface:  #000d1a;
+  --border:   #003366;
+  --glow:     #00aaff;
+  --glow2:    #00ffcc;
+  --danger:   #ff4444;
+  --gold:     #ffcc00;
+  --text:     #88bbdd;
+  --bright:   #ddeeff;
+  --dim:      #224466;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Kufi Arabic', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* خلفية متحركة */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, #001833 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 20% 80%, #001122 0%, transparent 50%);
+  pointer-events:none;
+  z-index:0;
+}
+
+.grid-bg {
+  position:fixed; inset:0; z-index:0;
+  background-image:
+    linear-gradient(rgba(0,100,200,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,100,200,.05) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation: gridMove 20s linear infinite;
+}
+@keyframes gridMove {
+  from { background-position:0 0; }
+  to   { background-position:50px 50px; }
+}
+
+/* particles */
+.particles { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.particle {
+  position:absolute;
+  width:2px; height:2px;
+  background:var(--glow);
+  border-radius:50%;
+  opacity:0;
+  animation: float linear infinite;
+}
+@keyframes float {
+  0%   { transform:translateY(100vh) translateX(0); opacity:0; }
+  10%  { opacity:.6; }
+  90%  { opacity:.3; }
+  100% { transform:translateY(-10vh) translateX(30px); opacity:0; }
+}
+
+/* wrapper */
+.wrapper {
+  position:relative; z-index:1;
+  width:100%; max-width:780px;
+  padding:2rem 1.5rem 4rem;
+  display:flex; flex-direction:column; gap:2rem;
+}
+
+/* header */
+header {
+  text-align:center;
+  padding-top:1rem;
+}
+
+.logo-ring {
+  width:80px; height:80px;
+  margin:0 auto 1.2rem;
+  position:relative;
+}
+.logo-ring svg { width:100%; height:100%; animation: spin 8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.logo-inner {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem;
+  animation: counterSpin 8s linear infinite;
+}
+@keyframes counterSpin { to { transform:rotate(-360deg); } }
+
+h1 {
+  font-family:'Orbitron', monospace;
+  font-size:1.6rem;
+  font-weight:900;
+  color:var(--bright);
+  letter-spacing:.1em;
+  text-shadow: 0 0 30px var(--glow);
+  margin-bottom:.4rem;
+}
+
+.subtitle {
+  font-size:.8rem;
+  color:var(--dim);
+  letter-spacing:.05em;
+}
+
+/* بطاقة الإدخال */
+.input-card {
+  background:linear-gradient(135deg, #000d1a 0%, #001122 100%);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:2rem;
+  box-shadow: 0 0 40px rgba(0,100,200,.1), inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.input-label {
+  font-size:.75rem;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin-bottom:1rem;
+  display:block;
+}
+
+.input-row {
+  display:flex;
+  gap:1rem;
+  align-items:stretch;
+}
+
+.input-wrap {
+  flex:1;
+  position:relative;
+}
+
+input[type="text"] {
+  width:100%;
+  background:rgba(0,30,60,.6);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1rem 1.2rem;
+  color:var(--bright);
+  font-family:'Orbitron', monospace;
+  font-size:1.4rem;
+  font-weight:700;
+  text-align:center;
+  letter-spacing:.1em;
+  outline:none;
+  transition:all .3s;
+}
+input[type="text"]:focus {
+  border-color:var(--glow);
+  box-shadow:0 0 20px rgba(0,170,255,.2);
+}
+input[type="text"]::placeholder { color:var(--dim); font-size:1rem; }
+
+.go-btn {
+  background:linear-gradient(135deg, #0044aa, #0077ff);
+  border:none;
+  border-radius:10px;
+  padding:0 2rem;
+  color:#fff;
+  font-family:'Orbitron', monospace;
+  font-size:1rem;
+  font-weight:700;
+  cursor:pointer;
+  letter-spacing:.1em;
+  transition:all .3s;
+  box-shadow:0 0 20px rgba(0,100,255,.3);
+  white-space:nowrap;
+}
+.go-btn:hover {
+  background:linear-gradient(135deg, #0055cc, #0099ff);
+  box-shadow:0 0 30px rgba(0,150,255,.5);
+  transform:translateY(-2px);
+}
+.go-btn:active { transform:translateY(0); }
+.go-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+/* أمثلة سريعة */
+.quick-examples {
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+  margin-top:1rem;
+}
+.quick-btn {
+  background:rgba(0,50,100,.3);
+  border:1px solid var(--dim);
+  border-radius:6px;
+  padding:.3rem .8rem;
+  color:var(--text);
+  font-family:'Orbitron', monospace;
+  font-size:.7rem;
+  cursor:pointer;
+  transition:all .2s;
+}
+.quick-btn:hover {
+  border-color:var(--glow);
+  color:var(--bright);
+  background:rgba(0,100,200,.2);
+}
+
+/* بطاقة النتيجة */
+.result-card {
+  background:linear-gradient(135deg, #000d1a 0%, #001122 100%);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:2rem;
+  display:none;
+  animation:fadeIn .5s ease;
+  box-shadow:0 0 40px rgba(0,100,200,.1);
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+.result-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:1.5rem;
+  padding-bottom:1rem;
+  border-bottom:1px solid var(--border);
+}
+
+.result-rank {
+  font-size:.7rem;
+  color:var(--dim);
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.result-status {
+  font-size:.7rem;
+  padding:.2rem .7rem;
+  border-radius:20px;
+  letter-spacing:.05em;
+}
+.status-ok  { background:rgba(0,255,100,.1); border:1px solid rgba(0,255,100,.3); color:#00ff88; }
+.status-big { background:rgba(255,200,0,.1);  border:1px solid rgba(255,200,0,.3);  color:#ffcc00; }
+
+/* العدد الأولي الرئيسي */
+.prime-display {
+  text-align:center;
+  margin:1.5rem 0;
+}
+
+.prime-label {
+  font-size:.7rem;
+  color:var(--dim);
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  margin-bottom:.5rem;
+}
+
+.prime-number {
+  font-family:'Orbitron', monospace;
+  font-weight:900;
+  color:var(--glow2);
+  line-height:1.1;
+  word-break:break-all;
+  text-shadow:0 0 30px rgba(0,255,204,.4);
+  transition:font-size .3s;
+}
+
+/* معلومات إضافية */
+.info-grid {
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:.8rem;
+  margin-top:1.5rem;
+}
+
+.info-box {
+  background:rgba(0,30,60,.4);
+  border:1px solid var(--dim);
+  border-radius:8px;
+  padding:.8rem;
+  text-align:center;
+}
+.info-val { font-family:'Orbitron', monospace; font-size:1rem; color:var(--bright); font-weight:700; }
+.info-lbl { font-size:.6rem; color:var(--dim); margin-top:.2rem; letter-spacing:.08em; }
+
+/* الموجة */
+.wave-section {
+  margin-top:1.5rem;
+  padding-top:1rem;
+  border-top:1px solid var(--border);
+}
+.wave-title {
+  font-size:.65rem;
+  color:var(--dim);
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  margin-bottom:.8rem;
+}
+.wave-bars {
+  display:flex;
+  gap:.3rem;
+  align-items:flex-end;
+  height:50px;
+}
+.wave-bar {
+  flex:1;
+  border-radius:3px 3px 0 0;
+  transition:height .5s ease;
+  position:relative;
+}
+.wave-bar-label {
+  position:absolute;
+  bottom:-18px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:.5rem;
+  color:var(--dim);
+  white-space:nowrap;
+}
+
+/* شريط التقدم */
+.progress-wrap {
+  display:none;
+  margin-top:1rem;
+}
+.progress-bar-bg {
+  background:rgba(0,30,60,.5);
+  border:1px solid var(--border);
+  border-radius:6px;
+  height:6px;
+  overflow:hidden;
+  margin-bottom:.5rem;
+}
+.progress-bar-fill {
+  height:100%;
+  background:linear-gradient(90deg, var(--glow), var(--glow2));
+  border-radius:6px;
+  width:0%;
+  transition:width .3s;
+  box-shadow:0 0 10px var(--glow);
+}
+.progress-text {
+  font-family:'Orbitron', monospace;
+  font-size:.65rem;
+  color:var(--dim);
+  text-align:center;
+}
+
+/* تحذير الأعداد الكبيرة */
+.warning-box {
+  display:none;
+  background:rgba(255,180,0,.05);
+  border:1px solid rgba(255,180,0,.2);
+  border-radius:8px;
+  padding:.8rem 1rem;
+  font-size:.72rem;
+  color:#ffcc66;
+  margin-top:.8rem;
+  line-height:1.6;
+}
+
+/* تحقق */
+.verify-section {
+  background:linear-gradient(135deg, #000d1a 0%, #001122 100%);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:1.5rem 2rem;
+}
+
+.verify-title {
+  font-size:.7rem;
+  color:var(--dim);
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  margin-bottom:1rem;
+}
+
+.verify-row {
+  display:flex;
+  gap:.8rem;
+  align-items:center;
+}
+
+input[type="text"].verify-input {
+  font-size:.9rem;
+  padding:.7rem 1rem;
+}
+
+.verify-result {
+  margin-top:.8rem;
+  padding:.6rem 1rem;
+  border-radius:6px;
+  font-family:'Orbitron', monospace;
+  font-size:.8rem;
+  display:none;
+}
+.verify-prime    { background:rgba(0,255,100,.1); border:1px solid rgba(0,255,100,.3); color:#00ff88; }
+.verify-composite{ background:rgba(255,50,50,.1);  border:1px solid rgba(255,50,50,.3);  color:#ff6666; }
+
+/* scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:var(--surface); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="particles" id="particles"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-ring">
+      <svg viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="36" stroke="#003366" stroke-width="1"/>
+        <circle cx="40" cy="40" r="36" stroke="url(#grad)" stroke-width="2"
+                stroke-dasharray="60 166" stroke-linecap="round"/>
+        <circle cx="40" cy="40" r="28" stroke="#001833" stroke-width="1"/>
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="80" y2="80">
+            <stop offset="0%" stop-color="#00aaff"/>
+            <stop offset="100%" stop-color="#00ffcc"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="logo-inner">∿</div>
+    </div>
+    <h1>MIRROR PRIME</h1>
+    <div class="subtitle">محرك الأعداد الأولية · الشبكة المرآتية · H. Chaouchi 2026</div>
+  </header>
+
+  <!-- Input -->
+  <div class="input-card">
+    <span class="input-label">أدخل الترتيب — العدد الأولي رقم N</span>
+    <div class="input-row">
+      <div class="input-wrap">
+        <input type="text" id="rankInput" placeholder="مثال: 1000000" inputmode="numeric"/>
+      </div>
+      <button class="go-btn" id="goBtn" onclick="findPrime()">ابحث ◉</button>
+    </div>
+
+    <div class="quick-examples">
+      <span style="font-size:.65rem;color:var(--dim);align-self:center">أمثلة سريعة:</span>
+      <button class="quick-btn" onclick="setRank(10)">10</button>
+      <button class="quick-btn" onclick="setRank(100)">100</button>
+      <button class="quick-btn" onclick="setRank(1000)">1,000</button>
+      <button class="quick-btn" onclick="setRank(10000)">10,000</button>
+      <button class="quick-btn" onclick="setRank(100000)">100,000</button>
+      <button class="quick-btn" onclick="setRank(1000000)">1,000,000</button>
+    </div>
+
+    <div class="warning-box" id="warningBox">
+      ⚠ الأعداد الكبيرة (n > 100,000) تتطلب وقتاً أطول للحساب في المتصفح.
+      الخوارزمية تستخدم هيكل mod 30 لتخطي 73% من الأعداد تلقائياً.
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">جاري الحساب...</div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div>
+        <div class="result-rank" id="resultRank">العدد الأولي رقم —</div>
+      </div>
+      <div class="result-status status-ok" id="resultStatus">✓ محسوب</div>
+    </div>
+
+    <div class="prime-display">
+      <div class="prime-label">العدد الأولي</div>
+      <div class="prime-number" id="primeNumber">—</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="info-val" id="infoDigits">—</div>
+        <div class="info-lbl">عدد الأرقام</div>
+      </div>
+      <div class="info-box">
+        <div class="info-val" id="infoWave">—</div>
+        <div class="info-lbl">الموجة (mod 30)</div>
+      </div>
+      <div class="info-box">
+        <div class="info-val" id="infoTime">—</div>
+        <div class="info-lbl">زمن الحساب</div>
+      </div>
+    </div>
+
+    <!-- موجات الهيكل -->
+    <div class="wave-section">
+      <div class="wave-title">توزيع الأعداد الأولية المحيطة على موجات الهيكل</div>
+      <div class="wave-bars" id="waveBars"></div>
+    </div>
+  </div>
+
+  <!-- Verify -->
+  <div class="verify-section">
+    <div class="verify-title">فحص عدد — هل هو أولي؟</div>
+    <div class="verify-row">
+      <input type="text" class="verify-input" id="verifyInput"
+             placeholder="أدخل أي عدد للفحص" inputmode="numeric"/>
+      <button class="go-btn" onclick="verifyNumber()" style="padding:0 1.2rem;font-size:.8rem">فحص</button>
+    </div>
+    <div class="verify-result" id="verifyResult"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// الخوارزمية — الشبكة المرآتية mod 30
+// ============================================================
+
+const R_CLASSES = new Set([1,7,11,13,17,19,23,29]);
+const WAVE_COLORS = {
+  1:'#ff4444', 7:'#ff8800', 11:'#ffdd00',
+  13:'#44dd44', 17:'#00dddd', 19:'#4488ff',
+  23:'#aa44ff', 29:'#ff44aa'
+};
+const WAVE_NAMES = {
+  1:'W₁', 7:'W₇', 11:'W₁₁', 13:'W₁₃',
+  17:'W₁₇', 19:'W₁₉', 23:'W₂₃', 29:'W₂₉'
+};
+
+// غربال إراتوستينس المُحسَّن بهيكل mod 30
+function sieve(limit) {
+  const composite = new Uint8Array(limit+1);
+  composite[0]=composite[1]=1;
+  for(let i=2;i<=Math.sqrt(limit);i++){
+    if(!composite[i]){
+      for(let j=i*i;j<=limit;j+=i) composite[j]=1;
+    }
+  }
+  return composite;
+}
+
+// هل n أولي؟ — Miller-Rabin للأعداد الكبيرة
+function modPow(base, exp, mod) {
+  let result = 1n;
+  base = base % mod;
+  while(exp > 0n) {
+    if(exp % 2n === 1n) result = result * base % mod;
+    exp = exp / 2n;
+    base = base * base % mod;
+  }
+  return result;
+}
+
+function millerRabin(n, witnesses) {
+  if(n < 2n) return false;
+  if(n === 2n || n === 3n) return true;
+  if(n % 2n === 0n) return false;
+
+  let r = 0n, d = n - 1n;
+  while(d % 2n === 0n) { d /= 2n; r++; }
+
+  for(const a of witnesses) {
+    if(a >= n) continue;
+    let x = modPow(BigInt(a), d, n);
+    if(x === 1n || x === n-1n) continue;
+    let composite = true;
+    for(let i=0n; i<r-1n; i++) {
+      x = x*x % n;
+      if(x === n-1n) { composite=false; break; }
+    }
+    if(composite) return false;
+  }
+  return true;
+}
+
+function isPrimeBig(n) {
+  // اختبار حتمي لـ n < 3,317,044,064,679,887,385,961,981
+  const witnesses = [2,3,5,7,11,13,17,19,23,29,31,37];
+  return millerRabin(BigInt(n), witnesses);
+}
+
+function isPrime(n) {
+  if(n < 2) return false;
+  if(n === 2||n===3||n===5) return true;
+  if(n%2===0||n%3===0||n%5===0) return false;
+  if(!R_CLASSES.has(n%30)) return false;
+  return isPrimeBig(n);
+}
+
+// إيجاد العدد الأولي رقم n باستخدام هيكل mod 30
+async function nthPrimeMirror(rank, onProgress) {
+  if(rank===1) return 2;
+  if(rank===2) return 3;
+  if(rank===3) return 5;
+
+  // للأعداد الصغيرة: استخدم الغربال
+  const estimate = rank < 10 ? 30 :
+    Math.ceil(rank * (Math.log(rank) + Math.log(Math.log(rank)) + 2)) + 100;
+
+  if(rank <= 78498) { // أعداد أولية حتى 1,000,000
+    const comp = sieve(Math.min(estimate * 2, 2000000));
+    let count = 0;
+    for(let i=2; i<comp.length; i++){
+      if(!comp[i]){ count++; if(count===rank) return i; }
+    }
+  }
+
+  // للأعداد الكبيرة: القفز بهيكل mod 30
+  let count = 3;
+  let num = 7;
+  const R = [1,7,11,13,17,19,23,29];
+  let ri = 1; // نبدأ من 7
+
+  const GAPS = [4,2,4,2,4,6,2,6]; // الفجوات بين عناصر R
+  let gapIdx = 1;
+
+  const t0 = performance.now();
+
+  while(count < rank) {
+    if(isPrime(num)) {
+      count++;
+      if(count === rank) return num;
+    }
+
+    // القفز إلى العنصر التالي في الهيكل
+    num += GAPS[gapIdx % 8];
+    gapIdx++;
+
+    // تقدم كل 5000 عدد
+    if(count % 5000 === 0) {
+      const pct = Math.min(99, (count/rank)*100);
+      onProgress && onProgress(pct, count, num);
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  return num;
+}
+
+// حساب توزيع الموجات للأعداد المحيطة
+function waveDistribution(centerPrime) {
+  const dist = {};
+  [1,7,11,13,17,19,23,29].forEach(r => dist[r]=0);
+
+  let found = 0, num = centerPrime - 1;
+  while(found < 50 && num > 1) {
+    if(isPrime(num) && R_CLASSES.has(num%30)) {
+      dist[num%30]++;
+      found++;
+    }
+    num--;
+  }
+  found=0; num=centerPrime+1;
+  while(found < 50) {
+    if(isPrime(num) && R_CLASSES.has(num%30)) {
+      dist[num%30]++;
+      found++;
+    }
+    num++;
+  }
+  return dist;
+}
+
+// ============================================================
+// واجهة المستخدم
+// ============================================================
+
+function setRank(n) {
+  document.getElementById('rankInput').value = n.toLocaleString('en');
+  document.getElementById('warningBox').style.display = n > 100000 ? 'block' : 'none';
+}
+
+document.getElementById('rankInput').addEventListener('input', function() {
+  const v = parseInt(this.value.replace(/,/g,''));
+  document.getElementById('warningBox').style.display =
+    (!isNaN(v) && v > 100000) ? 'block' : 'none';
+});
+
+document.getElementById('rankInput').addEventListener('keydown', e => {
+  if(e.key==='Enter') findPrime();
+});
+
+async function findPrime() {
+  const rawVal = document.getElementById('rankInput').value.replace(/[\s,]/g,'');
+  const rank = parseInt(rawVal);
+
+  if(isNaN(rank) || rank < 1) {
+    document.getElementById('rankInput').style.borderColor='var(--danger)';
+    setTimeout(()=>document.getElementById('rankInput').style.borderColor='',1000);
+    return;
+  }
+
+  const btn = document.getElementById('goBtn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const progWrap = document.getElementById('progressWrap');
+  progWrap.style.display = rank > 1000 ? 'block' : 'none';
+  document.getElementById('resultCard').style.display = 'none';
+
+  const t0 = performance.now();
+
+  try {
+    const prime = await nthPrimeMirror(rank, (pct, count, current) => {
+      document.getElementById('progressFill').style.width = pct+'%';
+      document.getElementById('progressText').textContent =
+        `وجدنا ${count.toLocaleString('en')} عدد أولي... الحالي: ${current.toLocaleString('en')}`;
+    });
+
+    const elapsed = ((performance.now()-t0)/1000).toFixed(3);
+    showResult(rank, prime, elapsed);
+
+  } catch(e) {
+    console.error(e);
+  }
+
+  progWrap.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = 'ابحث ◉';
+}
+
+function showResult(rank, prime, elapsed) {
+  const card = document.getElementById('resultCard');
+  card.style.display = 'block';
+
+  const primeStr = prime.toLocaleString('en');
+  const digits = prime.toString().length;
+
+  document.getElementById('resultRank').textContent = `العدد الأولي رقم ${rank.toLocaleString('en')}`;
+  document.getElementById('resultStatus').textContent =
+    digits > 10 ? '✓ عدد ضخم' : '✓ محسوب';
+  document.getElementById('resultStatus').className =
+    'result-status ' + (digits > 10 ? 'status-big' : 'status-ok');
+
+  // العدد الأولي مع حجم خط متكيف
+  const pEl = document.getElementById('primeNumber');
+  pEl.textContent = primeStr;
+  const fontSize = digits > 15 ? '1.2rem' : digits > 10 ? '1.8rem' : digits > 6 ? '2.5rem' : '3.5rem';
+  pEl.style.fontSize = fontSize;
+
+  document.getElementById('infoDigits').textContent = digits;
+  document.getElementById('infoWave').textContent =
+    `W${prime%30} (r=${prime%30})`;
+  document.getElementById('infoTime').textContent = elapsed + 'ث';
+
+  // موجات الهيكل
+  const dist = waveDistribution(prime);
+  const maxVal = Math.max(...Object.values(dist));
+  const barsEl = document.getElementById('waveBars');
+  barsEl.innerHTML = '';
+
+  Object.entries(dist).forEach(([r, count]) => {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    const pct = maxVal > 0 ? (count/maxVal)*100 : 0;
+    bar.style.height = Math.max(4, pct*0.8)+'%';
+    bar.style.background = WAVE_COLORS[r] || '#444';
+    bar.style.opacity = prime%30 == r ? '1' : '0.6';
+    bar.style.boxShadow = prime%30 == r ? `0 0 10px ${WAVE_COLORS[r]}` : 'none';
+    bar.innerHTML = `<span class="wave-bar-label" style="color:${WAVE_COLORS[r]}">${WAVE_NAMES[r]}</span>`;
+    barsEl.appendChild(bar);
+  });
+
+  card.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function verifyNumber() {
+  const raw = document.getElementById('verifyInput').value.replace(/[\s,]/g,'');
+  const n = parseInt(raw);
+  const el = document.getElementById('verifyResult');
+
+  if(isNaN(n) || n < 2) {
+    el.style.display='block';
+    el.className='verify-result verify-composite';
+    el.textContent='أدخل عدداً صحيحاً أكبر من 1';
+    return;
+  }
+
+  const result = isPrime(n);
+  el.style.display='block';
+  el.className='verify-result ' + (result?'verify-prime':'verify-composite');
+
+  if(result) {
+    const r = n%30;
+    el.textContent = `✓ ${n.toLocaleString('en')} عدد أولي — موجته W${r} (r=${r})`;
+  } else {
+    el.textContent = `✗ ${n.toLocaleString('en')} ليس أولياً`;
+  }
+}
+
+document.getElementById('verifyInput').addEventListener('keydown', e => {
+  if(e.key==='Enter') verifyNumber();
+});
+
+// جسيمات الخلفية
+function createParticles() {
+  const container = document.getElementById('particles');
+  for(let i=0;i<25;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    p.style.left = Math.random()*100+'%';
+    p.style.animationDuration = (8+Math.random()*15)+'s';
+    p.style.animationDelay = (-Math.random()*20)+'s';
+    p.style.width = p.style.height = (1+Math.random()*2)+'px';
+    p.style.opacity = Math.random()*0.5;
+    container.appendChild(p);
+  }
+}
+createParticles();
+</script>
+</body>
+</html>

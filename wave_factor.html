@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تفكيك الموجة — شبكة المرايا</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cairo:wght@400;700;900&display=swap');
+:root{
+  --bg:#05080f;--panel:#090e1a;--border:#141f35;
+  --text:#6b8caa;--bright:#d4eaf7;--dim:#1e3050;
+  --accent:#00e5ff;--gold:#ffc740;--green:#00ff9d;
+  --red:#ff3d5a;--purple:#b060ff;--orange:#ff8c42;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 20% 30%,rgba(0,229,255,.05),transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 70%,rgba(176,96,255,.05),transparent 60%);
+  pointer-events:none;}
+header{text-align:center;margin-bottom:1.2rem;position:relative;z-index:1;}
+.logo{width:48px;height:48px;border:2px solid var(--accent);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--accent);
+  box-shadow:0 0 30px rgba(0,229,255,.4);animation:glow 3s ease-in-out infinite;margin:0 auto .6rem;}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3);}50%{box-shadow:0 0 50px rgba(0,229,255,.7);}}
+h1{font-family:'Cairo',sans-serif;font-size:1.2rem;font-weight:900;color:var(--bright);}
+.sub{font-size:.5rem;color:var(--dim);margin-top:.2rem;letter-spacing:.1em;}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1.1rem 1.5rem;width:100%;max-width:720px;position:relative;z-index:1;margin-bottom:.9rem;}
+.card-title{font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.7rem;}
+
+.input-row{display:flex;gap:.6rem;align-items:center;margin-bottom:.6rem;}
+input[type=text]{flex:1;background:rgba(0,50,100,.3);border:2px solid var(--border);border-radius:8px;
+  color:var(--bright);padding:.55rem .9rem;font-family:'Space Mono',monospace;font-size:.95rem;
+  outline:none;text-align:center;transition:border-color .2s;}
+input[type=text]:focus{border-color:var(--accent);}
+.go-btn{background:rgba(0,100,200,.25);border:2px solid var(--accent);color:var(--accent);
+  padding:.55rem 1.3rem;border-radius:8px;font-family:'Space Mono',monospace;font-size:.8rem;
+  cursor:pointer;transition:all .2s;white-space:nowrap;}
+.go-btn:hover{background:rgba(0,229,255,.2);}
+
+.examples{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.4rem;}
+.ex-btn{background:rgba(0,20,50,.4);border:1px solid var(--border);color:var(--text);
+  padding:.25rem .6rem;border-radius:4px;font-size:.58rem;cursor:pointer;transition:all .15s;}
+.ex-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* الموجات */
+canvas{display:block;width:100%;border-radius:4px;}
+.wave-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem;}
+.wave-box{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:.6rem .7rem;}
+.wave-label{font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.35rem;}
+
+/* جدول البواقي */
+.mod-grid{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem;}
+.mod-chip{border-radius:5px;padding:.3rem .5rem;text-align:center;min-width:52px;}
+.mod-chip .mk{font-size:.48rem;color:var(--dim);}
+.mod-chip .mv{font-size:.85rem;font-weight:700;}
+
+/* خطوات CRT */
+.steps{display:flex;flex-direction:column;gap:.5rem;}
+.step{background:rgba(0,20,50,.35);border:1px solid var(--border);border-radius:6px;
+  padding:.6rem .9rem;font-size:.6rem;line-height:1.9;}
+.step .sh{font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.3rem;}
+.step span{color:var(--bright);}
+.step .hit{color:var(--green);font-weight:700;}
+.step .miss{color:var(--red);}
+.step .cand{color:var(--gold);}
+
+/* النتيجة */
+.result-box{border-radius:10px;padding:1rem;text-align:center;margin-top:.5rem;}
+.result-prime{background:rgba(0,255,157,.07);border:2px solid rgba(0,255,157,.3);}
+.result-fail{background:rgba(255,61,90,.06);border:2px solid rgba(255,61,90,.2);}
+.rval{font-size:1.6rem;font-weight:700;word-break:break-all;}
+.rlbl{font-size:.65rem;margin-top:.3rem;letter-spacing:.07em;}
+.rtime{font-size:.46rem;color:var(--dim);margin-top:.2rem;}
+
+/* الموجة التقاطع */
+.intersection-visual{display:flex;align-items:center;gap:.5rem;justify-content:center;
+  flex-wrap:wrap;margin:.6rem 0;font-size:.7rem;}
+.iw{background:rgba(0,20,50,.4);border:1px solid var(--border);border-radius:6px;
+  padding:.4rem .8rem;text-align:center;}
+.iw .il{font-size:.45rem;color:var(--dim);}
+.iw .iv{font-size:.9rem;font-weight:700;}
+.iop{color:var(--dim);font-size:1rem;}
+
+/* log */
+.log-box{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:6px;
+  padding:.6rem .8rem;font-size:.55rem;line-height:1.9;max-height:180px;overflow-y:auto;
+  font-family:'Space Mono',monospace;}
+.log-box .lg{color:var(--dim);}
+.log-box .lh{color:var(--green);}
+.log-box .lc{color:var(--gold);}
+.log-box .lx{color:var(--red);}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <h1>تفكيك بالموجة — شبكة المرايا</h1>
+  <div class="sub">H. CHAOUCHI 2026 · Wave(n) = Wave(p) ⊗ Wave(q) · CRT INTERSECTION</div>
+</header>
+
+<!-- الإدخال -->
+<div class="card">
+  <div class="card-title">⟁ أدخل العدد المركب</div>
+  <div class="input-row">
+    <input type="text" id="numInput" placeholder="مثال: 9073 = 83 × 109" autocomplete="off">
+    <button class="go-btn" id="goBtn">▶ فكّك الموجة</button>
+  </div>
+  <div class="examples">
+    <span style="font-size:.5rem;color:var(--dim);align-self:center">أمثلة:</span>
+    <button class="ex-btn" onclick="setEx('9073')">9073</button>
+    <button class="ex-btn" onclick="setEx('91807')">91807</button>
+    <button class="ex-btn" onclick="setEx('1234567891')">1234567891</button>
+    <button class="ex-btn" onclick="setEx('9999999967')">9999999967</button>
+    <button class="ex-btn" onclick="setEx('15485863')">15485863</button>
+    <button class="ex-btn" onclick="setEx('999999937')">999999937</button>
+  </div>
+</div>
+
+<!-- موجات -->
+<div class="card" id="waveCard" style="display:none">
+  <div class="card-title">∿ بصمة الموجة — Wave(n) = {n mod k}</div>
+  <div class="wave-row">
+    <div class="wave-box">
+      <div class="wave-label" style="color:var(--accent)">موجة n (المركب)</div>
+      <canvas id="cWaveN" height="90"></canvas>
+    </div>
+    <div class="wave-box" id="waveFactorBox" style="display:none">
+      <div class="wave-label" id="waveFactorLabel" style="color:var(--green)">موجة p (العامل)</div>
+      <canvas id="cWaveP" height="90"></canvas>
+    </div>
+  </div>
+  <div class="card-title" style="margin-top:.3rem">البواقي n mod k</div>
+  <div class="mod-grid" id="modGrid"></div>
+</div>
+
+<!-- خطوات CRT -->
+<div class="card" id="crtCard" style="display:none">
+  <div class="card-title">◈ تقاطع الموجات — بناء المرشحين بـ CRT</div>
+  <div class="intersection-visual" id="intersectVis"></div>
+  <div class="steps" id="crtSteps"></div>
+</div>
+
+<!-- اللوج -->
+<div class="card" id="logCard" style="display:none">
+  <div class="card-title">◉ سجل البحث</div>
+  <div class="log-box" id="logBox"></div>
+</div>
+
+<!-- النتيجة -->
+<div class="card" id="resultCard" style="display:none">
+  <div class="card-title">★ النتيجة</div>
+  <div id="resultBox"></div>
+</div>
+
+<script>
+// ===== الأعداد الأولية الصغيرة للموجة =====
+const MODS = [2,3,5,7,11,13,17,19,23,29];
+const MOD_COLORS = ['#00e5ff','#b060ff','#00ff9d','#ffc740','#ff3d5a',
+                    '#00e5ff','#b060ff','#00ff9d','#ffc740','#ff3d5a'];
+
+// ===== BigInt helpers =====
+function modpow(base, exp, mod) {
+  let r=1n; base=base%mod;
+  while(exp>0n){if(exp%2n===1n)r=r*base%mod;exp/=2n;base=base*base%mod;}
+  return r;
+}
+function millerRabin(n){
+  if(n<2n)return false;
+  if(n===2n||n===3n)return true;
+  if(n%2n===0n)return false;
+  let d=n-1n,r=0n;
+  while(d%2n===0n){d/=2n;r++;}
+  for(const a of [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){
+    if(a>=n)continue;
+    let x=modpow(a,d,n);
+    if(x===1n||x===n-1n)continue;
+    let comp=true;
+    for(let j=0n;j<r-1n;j++){x=x*x%n;if(x===n-1n){comp=false;break;}}
+    if(comp)return false;
+  }
+  return true;
+}
+
+// GCD و modular inverse
+function gcd(a,b){while(b){[a,b]=[b,a%b];}return a;}
+function modInv(a,m){
+  let [old_r,r]=[a,m],[old_s,s]=[1n,0n];
+  while(r!==0n){
+    const q=old_r/r;
+    [old_r,r]=[r,old_r-q*r];
+    [old_s,s]=[s,old_s-q*s];
+  }
+  return((old_s%m)+m)%m;
+}
+
+// CRT: حل x ≡ rem[i] mod mod[i]
+function crt(rems, mods){
+  let M=1n;
+  for(const m of mods) M*=m;
+  let x=0n;
+  for(let i=0;i<mods.length;i++){
+    const Mi=M/mods[i];
+    const inv=modInv(Mi%mods[i], mods[i]);
+    x=(x+rems[i]*Mi*inv)%M;
+  }
+  return{x:((x%M)+M)%M, M};
+}
+
+// ===== رسم الموجة =====
+function drawWave(canvasId, vals, mods, color, label){
+  const cv=document.getElementById(canvasId);
+  const W=cv.parentElement.clientWidth-20;
+  cv.width=W; cv.height=90;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,90);
+
+  const pad={l:8,r:8,t:10,b:18};
+  const cW=W-pad.l-pad.r;
+  const cH=90-pad.t-pad.b;
+  const n=vals.length;
+  const maxVal=Math.max(...mods)-1;
+
+  // رسم خط الصفر
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad.l,pad.t+cH/2);ctx.lineTo(W-pad.r,pad.t+cH/2);ctx.stroke();
+
+  // رسم الموجة
+  const pts=vals.map((v,i)=>{
+    const norm=mods[i]>1?v/(mods[i]-1):0;
+    return{x:pad.l+(i/(n-1))*cW, y:pad.t+cH-(norm*cH)};
+  });
+
+  // تدرج
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+  grad.addColorStop(0,color+'cc');
+  grad.addColorStop(1,color+'22');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x,pad.t+cH);
+  pts.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.lineTo(pts[pts.length-1].x,pad.t+cH);
+  ctx.closePath();
+  ctx.fillStyle=grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+
+  // نقاط
+  pts.forEach((p,i)=>{
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);
+    ctx.fillStyle=color;ctx.fill();
+    // تسمية mod
+    ctx.fillStyle='#1e3050';ctx.font='7px Space Mono';ctx.textAlign='center';
+    ctx.fillText(mods[i],p.x,90-4);
+  });
+}
+
+// ===== عرض البواقي =====
+function showModGrid(n, mods){
+  const grid=document.getElementById('modGrid');
+  grid.innerHTML='';
+  mods.forEach((m,i)=>{
+    const r=Number(n%BigInt(m));
+    const chip=document.createElement('div');
+    chip.className='mod-chip';
+    chip.style.background=`rgba(${hexToRgb(MOD_COLORS[i])},.1)`;
+    chip.style.border=`1px solid ${MOD_COLORS[i]}44`;
+    chip.innerHTML=`<div class="mk">mod ${m}</div><div class="mv" style="color:${MOD_COLORS[i]}">${r}</div>`;
+    grid.appendChild(chip);
+  });
+}
+function hexToRgb(h){
+  const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+// ===== تسجيل =====
+let logLines=[];
+function log(msg,cls='lg'){
+  logLines.unshift(`<span class="${cls}">${msg}</span>`);
+  if(logLines.length>60)logLines.pop();
+  document.getElementById('logBox').innerHTML=logLines.join('<br>');
+}
+
+// ===== خوارزمية التفكيك بالموجة =====
+// للأعداد المركبة: نجد p بناء على تقاطع البواقي
+async function waveFactorize(n){
+  const t0=performance.now();
+  logLines=[];
+  log(`بدء تفكيك الموجة لـ n = ${n}`,'lc');
+
+  // 1. بصمة موجة n
+  const modsBI=MODS.map(m=>BigInt(m));
+  const rN=modsBI.map(m=>n%m);
+  log(`Wave(n) = [${rN.map((r,i)=>MODS[i]+'→'+r).join(', ')}]`);
+
+  // رسم موجة n
+  drawWave('cWaveN', rN.map(r=>Number(r)), MODS, 'var(--accent)', 'Wave(n)');
+  showModGrid(n, MODS);
+
+  // 2. حساب الجذر التقريبي
+  const sqrtN=BigInt(Math.ceil(Math.sqrt(Number(n))));
+
+  // 3. بناء مرشحي p من كل mod بالـ CRT
+  // لكل mod k: p%k يمكن أن يكون أي r حيث gcd(r,k)=1 و (n/r)%k = n%k / r%k
+  // نبني شبكة المرشحين
+
+  const crtStepsEl=document.getElementById('crtSteps');
+  crtStepsEl.innerHTML='';
+
+  // الأعداد الأولية الصغيرة للمرشح الأولي
+  // mod 2: p فردي لأن n مركب من أوليين كبيرين
+  // mod 3: p mod 3 ∈ {1,2} إذا 3 لا يقسم n
+  // وهكذا
+
+  let validResidues={}; // validResidues[k] = [r1,r2,...] بحيث r * (n/r mod k) ≡ n mod k
+  let accumulated=[{rems:[], mods:[], product:1n}];
+
+  for(let i=0;i<MODS.length;i++){
+    const m=MODS[i];
+    const mBI=BigInt(m);
+    const rn=n%mBI;
+    const newAcc=[];
+    const validR=[];
+
+    for(let r=1n;r<mBI;r++){
+      if(n%mBI===0n&&r===0n)continue;
+      if(gcd(r,mBI)!==1n)continue; // p أولي لا يقبل القسمة على m
+      // q mod m
+      let q_r;
+      if(rn===0n){q_r=0n;}
+      else{
+        try{q_r=rn*modInv(r,mBI)%mBI;}catch(e){continue;}
+      }
+      if(gcd(q_r,mBI)!==1n&&q_r!==0n)continue;
+      validR.push(Number(r));
+    }
+
+    // تحديث المرشحين بالـ CRT
+    for(const prev of accumulated){
+      for(const r of validR){
+        const rBI=BigInt(r);
+        newAcc.push({
+          rems:[...prev.rems,rBI],
+          mods:[...prev.mods,mBI],
+          product:prev.product*mBI
+        });
+      }
+    }
+    // نحتفظ فقط بعدد معقول من المرشحين
+    accumulated=newAcc.slice(0,512);
+
+    // عرض الخطوة
+    const step=document.createElement('div');
+    step.className='step';
+    step.innerHTML=`<div class="sh">الخطوة ${i+1} — mod ${m}</div>
+      n mod ${m} = <span>${Number(rN[i])}</span> &nbsp;|&nbsp;
+      مرشحات p mod ${m}: <span class="cand">[${validR.join(', ')}]</span> &nbsp;|&nbsp;
+      إجمالي المسارات: <span>${accumulated.length}</span>`;
+    crtStepsEl.appendChild(step);
+
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  log(`إجمالي مسارات CRT: ${accumulated.length}`,'lc');
+
+  // 4. لكل مسار CRT → احسب p المرشح وتحقق
+  let found=null;
+  let checked=0;
+  const Q=accumulated[0]?.product||1n;
+
+  // أوجد الحل الفعلي بـ CRT لكل مسار
+  for(const path of accumulated){
+    if(found)break;
+    const {x:x0, M}=crt(path.rems, path.mods);
+    // ابحث في x0, x0+M, x0+2M, ... حتى sqrtN
+    let cand=x0>1n?x0:x0+M;
+    let attempts=0;
+    while(cand<=sqrtN&&attempts<1000){
+      checked++;
+      if(cand>1n&&n%cand===0n){
+        found=cand;
+        log(`✓ وجدنا! p = ${cand} بعد ${checked} محاولة`,'lh');
+        break;
+      }
+      cand+=M;
+      attempts++;
+    }
+    if(checked%100===0){log(`تحقق ${checked} مرشح... (p mod ${M} = ${x0})`);}
+    await new Promise(r=>setTimeout(r,0));
+  }
+
+  // 5. إذا فشل CRT، اعود للبحث المباشر بقيد الموجة
+  if(!found){
+    log('CRT لم يجد العامل مباشرة — بحث موجّه بالموجة...','lg');
+    // نستخدم mod 30 كفلتر أساسي (الأعداد الأولية mod 30 ∈ {1,7,11,13,17,19,23,29})
+    const PRIME_RES30=[1n,7n,11n,13n,17n,19n,23n,29n];
+    let x=3n;
+    let waveChecks=0;
+    while(x<=sqrtN&&!found){
+      // فلتر الموجة: x mod 30 يجب أن يكون في المجموعة الأولية
+      const r30=((x%30n)+30n)%30n;
+      if(PRIME_RES30.includes(r30)){
+        // تحقق إضافي: x mod 7 يجب أن يطابق ما نتوقعه
+        if(n%x===0n){
+          found=x;
+          log(`✓ وجدنا بالبحث الموجّه! p = ${x} بعد ${waveChecks} فحص موجة`,'lh');
+          break;
+        }
+        waveChecks++;
+        if(waveChecks%1000===0){log(`فحص موجة ${waveChecks}، عند x = ${x}`);}
+      }
+      x+=2n;
+      await new Promise(r=>setTimeout(r,0));
+    }
+    checked+=waveChecks;
+  }
+
+  const ms=performance.now()-t0;
+
+  // 6. عرض النتيجة
+  if(found){
+    const q=n/found;
+    const isPrime1=millerRabin(found);
+    const isPrime2=millerRabin(q);
+
+    // رسم موجة العامل
+    const rP=modsBI.map(m=>found%m);
+    document.getElementById('waveFactorBox').style.display='block';
+    document.getElementById('waveFactorLabel').textContent=`موجة p = ${found}`;
+    drawWave('cWaveP', rP.map(r=>Number(r)), MODS, 'var(--green)', `Wave(${found})`);
+
+    // عرض التقاطع
+    const vis=document.getElementById('intersectVis');
+    vis.innerHTML=`
+      <div class="iw"><div class="il">Wave(p)</div><div class="iv" style="color:var(--green)">${found}</div></div>
+      <div class="iop">⊗</div>
+      <div class="iw"><div class="il">Wave(q)</div><div class="iv" style="color:var(--purple)">${q}</div></div>
+      <div class="iop">=</div>
+      <div class="iw"><div class="il">Wave(n)</div><div class="iv" style="color:var(--accent)">${n}</div></div>`;
+
+    // التحقق من العوالم mod 30
+    const world_p=Number(found%30n);
+    const world_q=Number(q%30n);
+    const world_n=Number(n%30n);
+
+    document.getElementById('resultBox').innerHTML=`
+      <div class="result-box result-prime">
+        <div class="rval" style="color:var(--green)">${found} × ${q}</div>
+        <div class="rlbl" style="color:var(--bright)">= ${n}</div>
+        <div style="margin-top:.7rem;font-size:.58rem;line-height:2;color:var(--text)">
+          p = ${found} &nbsp;|&nbsp; ${isPrime1?'<span style="color:var(--green)">أولي ✓</span>':'<span style="color:var(--red)">مركب</span>'} &nbsp;|&nbsp; 
+          عالم mod30 = <span style="color:var(--gold)">${world_p}</span><br>
+          q = ${q} &nbsp;|&nbsp; ${isPrime2?'<span style="color:var(--green)">أولي ✓</span>':'<span style="color:var(--red)">مركب</span>'} &nbsp;|&nbsp; 
+          عالم mod30 = <span style="color:var(--gold)">${world_q}</span><br>
+          تحقق: ${world_p} × ${world_q} mod 30 = ${(world_p*world_q)%30} = ${world_n} (n mod 30)
+          ${(world_p*world_q)%30===world_n?'<span style="color:var(--green)"> ✓</span>':'<span style="color:var(--red)"> ✗</span>'}
+        </div>
+        <div class="rtime">⏱ ${ms.toFixed(2)} ms &nbsp;|&nbsp; ${checked.toLocaleString()} مرشح فُحص</div>
+      </div>`;
+
+    log(`التفكيك: ${found} × ${q} = ${n}`,'lh');
+    log(`عالم p: mod30=${world_p}, عالم q: mod30=${world_q}`);
+    log(`تحقق الموجة: ${world_p}×${world_q} mod 30 = ${(world_p*world_q)%30} ${(world_p*world_q)%30===world_n?'= n mod 30 ✓':'≠ n mod 30 ✗'}`);
+
+  } else {
+    // إذا لم نجد — ربما n أولي
+    const isPrime=millerRabin(n);
+    document.getElementById('resultBox').innerHTML=`
+      <div class="result-box ${isPrime?'result-prime':'result-fail'}">
+        <div class="rval" style="color:${isPrime?'var(--green)':'var(--red)'}">
+          ${isPrime?'العدد أولي! ∄ تفكيك':'لم يُوجد تفكيك في النطاق'}
+        </div>
+        <div class="rlbl">${isPrime?'Miller-Rabin: أولي بيقين 100%':'قد يحتاج نطاقاً أوسع'}</div>
+        <div class="rtime">⏱ ${ms.toFixed(2)} ms</div>
+      </div>`;
+    log(isPrime?'n أولي — لا تفكيك':'لم يُوجد تفكيك','lx');
+  }
+}
+
+// ===== تشغيل =====
+function setEx(v){document.getElementById('numInput').value=v;}
+document.getElementById('goBtn').addEventListener('click', run);
+document.getElementById('numInput').addEventListener('keydown', e=>{if(e.key==='Enter')run();});
+
+async function run(){
+  const raw=document.getElementById('numInput').value.replace(/[\s,]/g,'');
+  if(!/^\d+$/.test(raw)||raw.length<2){alert('أدخل عدداً صحيحاً ≥ 2');return;}
+  const n=BigInt(raw);
+  if(n<4n){alert('أدخل عدداً مركباً ≥ 4');return;}
+
+  // إظهار البطاقات
+  ['waveCard','crtCard','logCard','resultCard'].forEach(id=>{
+    document.getElementById(id).style.display='block';
+  });
+  document.getElementById('waveFactorBox').style.display='none';
+  document.getElementById('crtSteps').innerHTML='';
+  document.getElementById('modGrid').innerHTML='';
+  document.getElementById('intersectVis').innerHTML='';
+  document.getElementById('resultBox').innerHTML='<div style="color:var(--dim);font-size:.6rem;padding:.5rem">جارٍ الحساب...</div>';
+  logLines=[];
+
+  await waveFactorize(n);
+}
+</script>
+</body>
+</html>

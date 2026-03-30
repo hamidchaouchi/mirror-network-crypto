@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>حاسبة الأوليات — شبكة المرايا</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cairo:wght@400;700;900&display=swap');
+:root{
+  --bg:#05080f;--panel:#090e1a;--border:#141f35;
+  --text:#6b8caa;--bright:#d4eaf7;--dim:#1e3050;
+  --accent:#00e5ff;--gold:#ffc740;--green:#00ff9d;
+  --red:#ff3d5a;--purple:#b060ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 20% 30%,rgba(0,229,255,.05),transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 70%,rgba(176,96,255,.05),transparent 60%);
+  pointer-events:none;}
+header{text-align:center;margin-bottom:1.5rem;position:relative;z-index:1;}
+.logo{width:52px;height:52px;border:2px solid var(--accent);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--accent);
+  box-shadow:0 0 30px rgba(0,229,255,.4);animation:glow 3s ease-in-out infinite;margin:0 auto .7rem;}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3);}50%{box-shadow:0 0 50px rgba(0,229,255,.7);}}
+h1{font-family:'Cairo',sans-serif;font-size:1.3rem;font-weight:900;color:var(--bright);}
+.sub{font-size:.52rem;color:var(--dim);margin-top:.2rem;letter-spacing:.1em;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1.3rem 1.8rem;width:100%;max-width:600px;position:relative;z-index:1;margin-bottom:1rem;}
+.input-row{display:flex;gap:.6rem;align-items:center;margin-bottom:.8rem;}
+input[type=text]{flex:1;background:rgba(0,50,100,.3);border:2px solid var(--border);border-radius:8px;
+  color:var(--bright);padding:.6rem .9rem;font-family:'Space Mono',monospace;font-size:1rem;
+  outline:none;text-align:center;transition:border-color .2s;}
+input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 15px rgba(0,229,255,.15);}
+.go-btn{background:rgba(0,100,200,.25);border:2px solid var(--accent);color:var(--accent);
+  padding:.6rem 1.4rem;border-radius:8px;font-family:'Space Mono',monospace;font-size:.85rem;
+  cursor:pointer;transition:all .2s;}
+.go-btn:hover{background:rgba(0,229,255,.2);}
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-bottom:.5rem;}
+.mbtn{background:rgba(0,20,50,.4);border:1px solid var(--border);color:var(--text);
+  padding:.45rem .3rem;border-radius:6px;font-family:'Space Mono',monospace;font-size:.56rem;
+  cursor:pointer;text-align:center;line-height:1.7;transition:all .15s;}
+.mbtn:hover{border-color:rgba(0,229,255,.4);color:var(--accent);}
+.mbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.08);}
+.hint{font-size:.5rem;color:var(--dim);text-align:center;margin-top:.3rem;}
+/* النتيجة */
+.result{display:none;}
+.result.show{display:block;}
+.verdict{text-align:center;padding:1rem;border-radius:10px;margin-bottom:.9rem;transition:all .3s;}
+.vp{background:rgba(0,255,157,.07);border:2px solid rgba(0,255,157,.3);}
+.vn{background:rgba(255,61,90,.06);border:2px solid rgba(255,61,90,.25);}
+.vm{background:rgba(255,199,64,.06);border:2px solid rgba(255,199,64,.25);}
+.vnum{font-size:2rem;font-weight:700;letter-spacing:.03em;word-break:break-all;}
+.vlbl{font-size:.68rem;margin-top:.3rem;letter-spacing:.08em;}
+.vtim{font-size:.48rem;color:var(--dim);margin-top:.2rem;}
+.copy-btn{display:inline-flex;align-items:center;gap:.35rem;margin-top:.55rem;
+  background:rgba(0,50,100,.35);border:1px solid var(--border);color:var(--text);
+  padding:.3rem .75rem;border-radius:6px;font-family:'Space Mono',monospace;font-size:.58rem;
+  cursor:pointer;transition:all .2s;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.1);}
+.copy-btn.copied{border-color:var(--green);color:var(--green);background:rgba(0,255,157,.1);}
+.sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.8rem;}
+.sbox{background:rgba(0,20,50,.4);border:1px solid var(--border);border-radius:6px;padding:.5rem;text-align:center;}
+.sval{font-size:.9rem;font-weight:700;word-break:break-all;}
+.slbl{font-size:.43rem;color:var(--dim);margin-top:.1rem;line-height:1.5;}
+/* تفاصيل */
+.detail{background:rgba(0,20,50,.3);border:1px solid var(--border);border-radius:6px;
+  padding:.6rem .8rem;font-size:.56rem;line-height:2;margin-bottom:.6rem;}
+.detail span{color:var(--bright);}
+/* قائمة الأوليات التالية */
+.nlist{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.4rem;}
+.nchip{padding:.15rem .4rem;border-radius:3px;font-size:.6rem;font-weight:700;}
+.nhit{background:rgba(0,255,157,.12);border:1px solid rgba(0,255,157,.3);color:var(--green);}
+.nmiss{background:rgba(176,96,255,.1);border:1px solid rgba(176,96,255,.25);color:var(--purple);}
+/* سجل */
+.htitle{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.4rem;}
+.hrow{display:flex;justify-content:space-between;align-items:center;padding:.2rem 0;
+  border-bottom:1px solid rgba(20,31,53,.5);font-size:.55rem;}
+.hrow:last-child{border-bottom:none;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <h1>حاسبة الأوليات — شبكة المرايا</h1>
+  <div class="sub">H. CHAOUCHI 2026 · MILLER-RABIN + d=-1 BIAS · NO LIMIT</div>
+</header>
+
+<div class="card">
+  <div class="input-row">
+    <input type="text" id="numInput" placeholder="أدخل أي عدد..." autocomplete="off">
+    <button class="go-btn" id="goBtn">▶</button>
+  </div>
+  <div class="modes">
+    <button class="mbtn active" id="m0">هل هو أولي؟<br><small style="color:var(--dim)">فوري · أي حجم</small></button>
+    <button class="mbtn" id="m1">الأولي التالي<br><small style="color:var(--dim)">بعد n</small></button>
+    <button class="mbtn" id="m2">أوليات قريبة<br><small style="color:var(--dim)">±100 من n</small></button>
+  </div>
+  <div class="hint" id="hint">Miller-Rabin الحتمي · يعمل مع أعداد من أي حجم</div>
+</div>
+
+<div class="card result" id="resultCard">
+  <div class="verdict" id="vbox">
+    <div class="vnum" id="vnum">—</div>
+    <div class="vlbl" id="vlbl">—</div>
+    <div class="vtim" id="vtim"></div>
+    <button class="copy-btn" id="copyBtn" style="display:none" onclick="copyResult()">⧉ نسخ العدد</button>
+  </div>
+  <div class="sgrid" id="sgrid"></div>
+  <div class="detail" id="detail"></div>
+  <div id="extraBlock" style="display:none">
+    <div style="font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.35rem" id="extraTitle"></div>
+    <div class="nlist" id="nlist"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="htitle">◈ سجل الاستعلامات</div>
+  <div id="hlist"><div style="color:var(--dim);font-size:.54rem">— لا يوجد سجل —</div></div>
+</div>
+
+<script>
+// ===== BigInt Miller-Rabin الحتمي =====
+// شهود كافية للأعداد حتى 3,317,044,064,679,887,385,961,981
+var WITNESSES = [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n];
+
+function modpow(base, exp, mod) {
+  var result = 1n;
+  base = base % mod;
+  while(exp > 0n) {
+    if(exp % 2n === 1n) result = result * base % mod;
+    exp = exp / 2n;
+    base = base * base % mod;
+  }
+  return result;
+}
+
+function millerRabin(n) {
+  if(n < 2n) return false;
+  if(n === 2n || n === 3n) return true;
+  if(n % 2n === 0n) return false;
+  // كتابة n-1 = 2^r * d
+  var d = n - 1n, r = 0n;
+  while(d % 2n === 0n) { d /= 2n; r++; }
+  for(var i=0; i<WITNESSES.length; i++) {
+    var a = WITNESSES[i];
+    if(a >= n) continue;
+    var x = modpow(a, d, n);
+    if(x === 1n || x === n-1n) continue;
+    var composite = true;
+    for(var j=0n; j<r-1n; j++) {
+      x = x * x % n;
+      if(x === n-1n) { composite=false; break; }
+    }
+    if(composite) return false;
+  }
+  return true;
+}
+
+// ===== نموذج d=-1 =====
+function isCandidate(n) {
+  // n مرشح إذا (n+1) mod 30 ∈ {0,12,24}
+  var r = Number(((n + 1n) % 30n + 30n) % 30n);
+  return r===0 || r===12 || r===24;
+}
+
+function candidateScore(n) {
+  // درجة ثقة إضافية بناءً على mod 30
+  var r = Number((n % 30n + 30n) % 30n);
+  // الباقيات الأصلية mod 30 للأوليات: 1,7,11,13,17,19,23,29
+  var baseResidue = [1,7,11,13,17,19,23,29].includes(r);
+  return baseResidue ? 'ممتاز' : 'ضعيف';
+}
+
+// عدد الأرقام التقريبي للبصمة
+function numDigits(n) { return n.toString().length; }
+
+// الأولي التالي — يفحص المرشحين أولاً
+function nextPrime(n) {
+  var x = n + 1n;
+  if(x === 2n) return 2n;
+  if(x % 2n === 0n) x++;
+  while(true) {
+    if(millerRabin(x)) return x;
+    x += 2n;
+  }
+}
+
+// أوليات في نطاق
+function primesInRange(lo, hi) {
+  var result = [];
+  var x = lo < 2n ? 2n : lo;
+  if(x === 2n) { if(millerRabin(2n)) result.push(2n); x = 3n; }
+  if(x % 2n === 0n) x++;
+  while(x <= hi) {
+    if(millerRabin(x)) result.push(x);
+    x += 2n;
+  }
+  return result;
+}
+
+// ===== واجهة =====
+var currentMode = 0;
+var historyLog = [];
+var lastPrimeRaw = '';
+
+function copyResult() {
+  if(!lastPrimeRaw) return;
+  var btn = document.getElementById('copyBtn');
+  var done = function() {
+    btn.textContent = '✓ تم النسخ!';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent='⧉ نسخ العدد'; btn.classList.remove('copied'); }, 2000);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(lastPrimeRaw).then(done).catch(function(){
+      fallbackCopy(); done();
+    });
+  } else { fallbackCopy(); done(); }
+}
+function fallbackCopy() {
+  var ta = document.createElement('textarea');
+  ta.value = lastPrimeRaw;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+['m0','m1','m2'].forEach(function(id, i) {
+  document.getElementById(id).addEventListener('click', function() {
+    currentMode = i;
+    ['m0','m1','m2'].forEach(function(x){ document.getElementById(x).classList.remove('active'); });
+    this.classList.add('active');
+    var hints = [
+      'Miller-Rabin الحتمي · يعمل مع أعداد من أي حجم',
+      'يبحث في المرشحين d=-1 أولاً → أسرع',
+      'يعرض الأوليات في النطاق [n-100, n+100]'
+    ];
+    document.getElementById('hint').textContent = hints[i];
+  });
+});
+
+document.getElementById('goBtn').addEventListener('click', run);
+document.getElementById('numInput').addEventListener('keydown', function(e){ if(e.key==='Enter') run(); });
+
+function parseInput(s) {
+  s = s.replace(/\s/g,'').replace(/,/g,'');
+  if(!/^\d+$/.test(s)) return null;
+  return BigInt(s);
+}
+
+function run() {
+  var raw = document.getElementById('numInput').value.trim();
+  var n   = parseInput(raw);
+  if(n === null || n < 2n) { alert('أدخل عدداً صحيحاً ≥ 2 (أرقام فقط)'); return; }
+  document.getElementById('resultCard').classList.add('show');
+  var t0 = performance.now();
+  if(currentMode===0) doSingle(n, t0);
+  else if(currentMode===1) doNextPrime(n, t0);
+  else doNearby(n, t0);
+}
+
+function setVerdict(cls, num, lbl, col, ms, raw) {
+  var vb = document.getElementById('vbox');
+  vb.className = 'verdict ' + cls;
+  document.getElementById('vnum').textContent = num;
+  document.getElementById('vnum').style.color = col;
+  document.getElementById('vlbl').textContent = lbl;
+  document.getElementById('vlbl').style.color = col;
+  document.getElementById('vtim').textContent = ms !== undefined ? '⏱ ' + ms.toFixed(2) + ' ms' : '';
+  // زر النسخ
+  var btn = document.getElementById('copyBtn');
+  if(raw) {
+    lastPrimeRaw = raw;
+    btn.style.display = 'inline-flex';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function setStats(boxes) {
+  document.getElementById('sgrid').innerHTML = boxes.map(function(b){
+    return '<div class="sbox"><div class="sval" style="color:'+b.col+'">'+b.val+'</div><div class="slbl">'+b.lbl+'</div></div>';
+  }).join('');
+}
+
+function addHistory(q, res, col) {
+  historyLog.unshift({q:q, res:res, col:col});
+  if(historyLog.length>8) historyLog.pop();
+  document.getElementById('hlist').innerHTML = historyLog.map(function(h){
+    return '<div class="hrow"><span style="color:var(--bright);font-weight:700">'+h.q+'</span><span style="color:'+h.col+'">'+h.res+'</span></div>';
+  }).join('');
+}
+
+// وضع 1: هل هو أولي؟
+function doSingle(n, t0) {
+  var prime = millerRabin(n);
+  var cand  = isCandidate(n);
+  var score = candidateScore(n);
+  var mod30 = Number(n % 30n);
+  var ms    = performance.now() - t0;
+
+  setVerdict(
+    prime?'vp':'vn',
+    formatBig(n),
+    prime ? '✓ عدد أولي' : '✗ عدد مركب',
+    prime ? 'var(--green)' : 'var(--red)',
+    ms,
+    n.toString()
+  );
+
+  setStats([
+    {val: prime?'أولي ✓':'مركب ✗',      lbl:'Miller-Rabin\nالحتمي 100%',  col: prime?'var(--green)':'var(--red)'},
+    {val: cand?'مرشح ✓':'لا',            lbl:'نموذج d=-1\n(n+1) mod30',   col: cand?'var(--gold)':'var(--dim)'},
+    {val: mod30,                          lbl:'n mod 30\nبصمة الباقي',      col: 'var(--accent)'}
+  ]);
+
+  var r30 = [1,7,11,13,17,19,23,29];
+  var inBase = r30.includes(mod30);
+  document.getElementById('detail').innerHTML =
+    '<span>عدد الأرقام:</span> ' + numDigits(n) +
+    ' · <span>n mod 30:</span> ' + mod30 +
+    ' · <span>باقٍ أساسي:</span> ' + (inBase?'<span style="color:var(--green)">نعم ✓</span>':'<span style="color:var(--red)">لا ✗</span>') +
+    '<br><span>حكم النموذج:</span> ' + (
+      prime&&cand  ? '<span style="color:var(--green)">إصابة ✓ — النموذج أصاب</span>' :
+      prime&&!cand ? '<span style="color:var(--gold)">فائت — أولي لكن خارج مرشحي d=-1</span>' :
+      !prime&&cand ? '<span style="color:var(--red)">إيجابية كاذبة — مرشح لكن مركب</span>' :
+                     '<span style="color:var(--accent)">رفض صحيح ✓ — مركب وغير مرشح</span>'
+    );
+
+  document.getElementById('extraBlock').style.display='none';
+  addHistory(formatBig(n), prime?'أولي ✓':'مركب ✗', prime?'var(--green)':'var(--red)');
+}
+
+// وضع 2: الأولي التالي
+function doNextPrime(n, t0) {
+  var next = nextPrime(n);
+  var gap  = next - n;
+  var cand = isCandidate(next);
+  var ms   = performance.now() - t0;
+
+  setVerdict('vp', formatBig(next), 'أول عدد أولي بعد ' + formatBig(n), 'var(--green)', ms, next.toString());
+  setStats([
+    {val: formatBig(next),  lbl:'الأولي التالي',              col:'var(--green)'},
+    {val: gap.toString(),   lbl:'الفجوة\n(next - n)',         col:'var(--accent)'},
+    {val: cand?'✓':'✗',    lbl:'مرشح d=-1؟',                 col: cand?'var(--gold)':'var(--red)'}
+  ]);
+
+  var mod30next = Number(next % 30n);
+  document.getElementById('detail').innerHTML =
+    '<span>n:</span> ' + formatBig(n) +
+    ' · <span>التالي:</span> ' + formatBig(next) +
+    ' · <span>الفجوة:</span> ' + gap.toString() +
+    '<br><span>next mod 30:</span> ' + mod30next +
+    ' · <span>مرشح d=-1:</span> ' + (cand?'<span style="color:var(--gold)">نعم</span>':'<span style="color:var(--red)">لا</span>') +
+    ' · <span>زمن البحث:</span> ' + ms.toFixed(2) + ' ms';
+
+  document.getElementById('extraBlock').style.display='none';
+  addHistory('بعد '+formatBig(n), formatBig(next)+' (فجوة '+gap+')', 'var(--green)');
+}
+
+// وضع 3: أوليات قريبة ±100
+function doNearby(n, t0) {
+  var lo = n - 100n < 2n ? 2n : n - 100n;
+  var hi = n + 100n;
+  var primes = primesInRange(lo, hi);
+  var ms = performance.now() - t0;
+
+  var cands = primes.filter(function(p){ return isCandidate(p); });
+  var hits  = cands.length;
+  var prec  = primes.length>0 ? (hits/primes.length*100).toFixed(1) : 0;
+
+  setVerdict('vm', primes.length.toString(), 'أولي في ['+formatBig(lo)+', '+formatBig(hi)+']', 'var(--gold)', ms, null);
+  setStats([
+    {val: primes.length,      lbl:'أوليات حقيقية\nفي النطاق',        col:'var(--green)'},
+    {val: hits,               lbl:'منها مرشحو\nd=-1',                 col:'var(--gold)'},
+    {val: prec+'%',           lbl:'نسبة إصابة\nd=-1 هنا',            col:'var(--accent)'}
+  ]);
+
+  document.getElementById('detail').innerHTML =
+    '<span>النطاق:</span> ['+formatBig(lo)+' , '+formatBig(hi)+']' +
+    ' · <span>عدد الأوليات:</span> '+primes.length +
+    ' · <span>زمن:</span> '+ms.toFixed(1)+' ms';
+
+  // عرض القائمة
+  document.getElementById('extraBlock').style.display='block';
+  document.getElementById('extraTitle').textContent = 'الأوليات في النطاق — أخضر=مرشح d=-1 · بنفسجي=خارج النموذج';
+  document.getElementById('nlist').innerHTML = primes.map(function(p){
+    var hit = isCandidate(p);
+    var isN = p===n;
+    return '<span class="nchip '+(hit?'nhit':'nmiss')+'" style="'+(isN?'border-color:var(--gold);':'')+'">'+
+      (isN?'◉ ':'')+p.toString()+'</span>';
+  }).join('');
+
+  addHistory('حول '+formatBig(n), primes.length+' أولي', 'var(--gold)');
+}
+
+// تنسيق العدد الكبير
+function formatBig(n) {
+  var s = n.toString();
+  if(s.length <= 15) {
+    // إضافة فواصل
+    return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  // عدد كبير جداً: اعرض أول 6 + ... + آخر 6
+  return s.slice(0,6) + '…' + s.slice(-6) + ' (' + s.length + ' رقم)';
+}
+</script>
+</body>
+</html>

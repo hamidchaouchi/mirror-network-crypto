@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirror Key Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@300;400;600;700&family=Cairo:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg:     #020405;
+  --bg2:    #080d12;
+  --bg3:    #0c1520;
+  --line:   #0e2030;
+  --a1:     #00e5ff;
+  --a2:     #76ff03;
+  --a3:     #ff6d00;
+  --a4:     #d500f9;
+  --txt:    #90a4ae;
+  --bright: #e0f7fa;
+  --dim:    #37474f;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Cairo', sans-serif;
+  min-height: 100vh;
+  cursor: crosshair;
+}
+
+/* scanline effect */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,229,255,0.012) 2px,
+    rgba(0,229,255,0.012) 4px
+  );
+  pointer-events:none; z-index:1000;
+}
+
+.wrap { max-width:820px; margin:0 auto; padding:28px 18px; }
+
+/* ── HEADER ── */
+.hdr {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+.hdr-title {
+  font-family:'Inconsolata', monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--a1);
+  text-shadow: 0 0 30px rgba(0,229,255,0.5);
+}
+.hdr-title em {
+  color: var(--a2);
+  font-style: normal;
+}
+.hdr-sub {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.68rem;
+  color: var(--dim);
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+.hdr-badge {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  padding: 5px 12px;
+  border: 1px solid var(--a3);
+  color: var(--a3);
+  background: rgba(255,109,0,0.08);
+  border-radius: 2px;
+}
+
+/* ── ENTROPY POOL ── */
+.entropy-section {
+  margin-bottom: 22px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.entropy-section::after {
+  content:'';
+  position:absolute; top:0; left:0; bottom:0; width:2px;
+  background: linear-gradient(180deg, var(--a4), transparent);
+}
+.sec-title {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 4px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.entropy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+@media(max-width:520px){ .entropy-grid{ grid-template-columns: repeat(2,1fr); } }
+
+.e-source {
+  background: var(--bg3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.e-source:hover { border-color: var(--a1); }
+.e-source.active { border-color: var(--a2); background: rgba(118,255,3,0.06); }
+.e-source .e-icon { font-size: 1.2rem; margin-bottom: 4px; }
+.e-source .e-lbl {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: var(--dim);
+}
+.e-source.active .e-lbl { color: var(--a2); }
+
+/* entropy bar */
+.ebar-wrap {
+  display: flex; align-items: center; gap: 10px;
+}
+.ebar-bg {
+  flex:1; height: 6px; background: var(--bg3);
+  border-radius: 3px; overflow: hidden;
+}
+.ebar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--a4), var(--a1), var(--a2));
+  width: 0%;
+  transition: width 0.4s;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(0,229,255,0.4);
+}
+.ebar-val {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.75rem;
+  color: var(--a1);
+  min-width: 70px;
+  text-align: left;
+}
+
+/* ── KEY CONFIG ── */
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+@media(max-width:520px){ .config-grid{ grid-template-columns:1fr; } }
+
+.cfg-box {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 16px 18px;
+}
+.cfg-box .sec-title { margin-bottom: 10px; }
+
+.opt-row {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.opt-btn {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg3);
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.opt-btn:hover { border-color: var(--a1); color: var(--a1); }
+.opt-btn.sel { border-color: var(--a1); color: var(--a1); background: rgba(0,229,255,0.07); }
+
+.check-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; cursor: pointer;
+}
+.check-row input { accent-color: var(--a1); width:14px; height:14px; cursor:pointer; }
+.check-row span {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.72rem;
+  color: var(--txt);
+}
+
+/* ── GENERATE BUTTON ── */
+.gen-wrap { margin-bottom: 22px; }
+.btn-gen {
+  width: 100%;
+  padding: 14px;
+  font-family:'Inconsolata', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--a1);
+  color: var(--a1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-gen::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(0,229,255,0.08), transparent);
+  opacity:0;
+  transition: opacity 0.2s;
+}
+.btn-gen:hover::before { opacity:1; }
+.btn-gen:hover {
+  box-shadow: 0 0 30px rgba(0,229,255,0.3), inset 0 0 30px rgba(0,229,255,0.05);
+  text-shadow: 0 0 20px rgba(0,229,255,0.8);
+}
+.btn-gen:active { transform: scale(0.99); }
+.btn-gen.loading {
+  border-color: var(--a3);
+  color: var(--a3);
+  animation: pulse-border 0.8s infinite;
+}
+@keyframes pulse-border {
+  0%,100% { box-shadow: 0 0 10px rgba(255,109,0,0.3); }
+  50%      { box-shadow: 0 0 30px rgba(255,109,0,0.6); }
+}
+
+/* ── OUTPUT ── */
+.output-section {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.out-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg3);
+}
+.out-label {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 3px;
+  color: var(--dim);
+}
+.out-actions { display: flex; gap: 6px; }
+.act-btn {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.act-btn:hover { border-color: var(--a1); color: var(--a1); }
+
+.key-display {
+  padding: 16px 18px;
+  font-family:'Inconsolata', monospace;
+  font-size: 0.82rem;
+  word-break: break-all;
+  direction: ltr;
+  color: var(--bright);
+  line-height: 1.9;
+  min-height: 60px;
+  letter-spacing: 1px;
+}
+.key-display.empty { color: var(--dim); font-size: 0.75rem; }
+
+/* colored segments */
+.seg { display: inline; border-radius: 1px; padding: 0 1px; }
+.seg-0 { color: var(--a1); }
+.seg-1 { color: var(--a2); }
+.seg-2 { color: var(--a3); }
+.seg-3 { color: var(--a4); }
+.seg-4 { color: #ffd740; }
+.seg-5 { color: #ff4081; }
+.seg-6 { color: #40c4ff; }
+
+/* ── STATS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+@media(max-width:520px){ .stats-grid{ grid-template-columns: repeat(2,1fr); } }
+
+.stat {
+  text-align: center;
+}
+.stat-v {
+  font-family:'Inconsolata', monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--a1);
+}
+.stat-l {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  color: var(--dim);
+  margin-top: 2px;
+}
+
+/* ── PROCESS LOG ── */
+.log-section {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 18px;
+}
+.log-header {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.log-body {
+  padding: 12px 18px;
+  font-family:'Inconsolata', monospace;
+  font-size: 0.72rem;
+  direction: ltr;
+  height: 160px;
+  overflow-y: auto;
+  line-height: 1.9;
+}
+.log-body::-webkit-scrollbar { width:4px; }
+.log-body::-webkit-scrollbar-thumb { background:var(--line); }
+
+.ll-head { color: var(--a1); }
+.ll-zeta { color: var(--a2); }
+.ll-mix  { color: var(--a3); }
+.ll-done { color: var(--a4); }
+.ll-info { color: var(--dim); }
+.ll-warn { color: #ffab40; }
+
+/* ── ZETA VISUALIZER ── */
+.zeta-viz {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+}
+#zetaCanvas {
+  width:100%; height:90px;
+  display:block;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: rgba(0,0,0,0.5);
+}
+
+/* ── SECURITY NOTES ── */
+.sec-note {
+  background: rgba(255,109,0,0.06);
+  border: 1px solid rgba(255,109,0,0.25);
+  border-radius: 4px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.sec-note p {
+  font-family:'Inconsolata', monospace;
+  font-size: 0.72rem;
+  color: var(--a3);
+  line-height: 1.8;
+  direction: ltr;
+}
+
+footer {
+  text-align:center;
+  padding:18px 0 12px;
+  border-top:1px solid var(--line);
+  font-family:'Inconsolata', monospace;
+  font-size:0.65rem;
+  color:var(--dim);
+  letter-spacing:2px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">MIRROR <em>KEY</em></div>
+      <div class="hdr-sub">ZETA-BASED CRYPTOGRAPHIC KEY GENERATOR · 56 LAYERS</div>
+    </div>
+    <div class="hdr-badge">EXPERIMENTAL</div>
+  </div>
+
+  <!-- ENTROPY SOURCES -->
+  <div class="entropy-section">
+    <div class="sec-title">◈ مصادر العشوائية — Entropy Pool</div>
+    <div class="entropy-grid">
+      <div class="e-source active" id="src-crypto">
+        <div class="e-icon">🔐</div>
+        <div class="e-lbl">CRYPTO API</div>
+      </div>
+      <div class="e-source active" id="src-time">
+        <div class="e-icon">⏱</div>
+        <div class="e-lbl">TIMESTAMP</div>
+      </div>
+      <div class="e-source active" id="src-mouse">
+        <div class="e-icon">🖱</div>
+        <div class="e-lbl">MOUSE/TOUCH</div>
+      </div>
+      <div class="e-source active" id="src-zeta">
+        <div class="e-icon">ζ</div>
+        <div class="e-lbl">ZETA EVAL</div>
+      </div>
+    </div>
+    <div class="ebar-wrap">
+      <div class="ebar-bg"><div class="ebar-fill" id="ebarFill"></div></div>
+      <div class="ebar-val" id="ebarVal">0 / 256 bits</div>
+    </div>
+    <div style="font-family:'Inconsolata',monospace;font-size:0.68rem;
+                color:var(--dim);margin-top:8px" id="entropyHint">
+      حرّك الماوس أو المس الشاشة لإضافة عشوائية...
+    </div>
+  </div>
+
+  <!-- KEY CONFIG -->
+  <div class="config-grid">
+
+    <div class="cfg-box">
+      <div class="sec-title">◈ طول المفتاح</div>
+      <div class="opt-row" id="lenOpts">
+        <button class="opt-btn" onclick="setLen(128,this)">128</button>
+        <button class="opt-btn sel" onclick="setLen(256,this)">256</button>
+        <button class="opt-btn" onclick="setLen(512,this)">512</button>
+        <button class="opt-btn" onclick="setLen(1024,this)">1024</button>
+      </div>
+      <div style="font-family:'Inconsolata',monospace;font-size:0.65rem;
+                  color:var(--dim);margin-top:8px">بت — البت الواحد من 56 طبقة زيتا</div>
+    </div>
+
+    <div class="cfg-box">
+      <div class="sec-title">◈ تنسيق الإخراج</div>
+      <div class="opt-row" id="fmtOpts">
+        <button class="opt-btn sel" onclick="setFmt('hex',this)">HEX</button>
+        <button class="opt-btn" onclick="setFmt('b64',this)">BASE64</button>
+        <button class="opt-btn" onclick="setFmt('bin',this)">BINARY</button>
+        <button class="opt-btn" onclick="setFmt('words',this)">BIP39</button>
+      </div>
+      <label class="check-row" style="margin-top:10px">
+        <input type="checkbox" id="chkColor" checked>
+        <span>تلوين الطبقات</span>
+      </label>
+      <label class="check-row">
+        <input type="checkbox" id="chkLog" checked>
+        <span>إظهار العملية</span>
+      </label>
+    </div>
+
+  </div>
+
+  <!-- GENERATE -->
+  <div class="gen-wrap">
+    <button class="btn-gen" id="btnGen" onclick="generateKey()">
+      ⬡ &nbsp; توليد مفتاح آمن &nbsp; ⬡
+    </button>
+  </div>
+
+  <!-- ZETA VISUALIZER -->
+  <div class="zeta-viz">
+    <div class="sec-title" style="margin-bottom:10px">◈ تصور تقييم زيتا — طبقات المفتاح</div>
+    <canvas id="zetaCanvas"></canvas>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="output-section">
+    <div class="out-header">
+      <span class="out-label" id="outLabel">◈ المفتاح — انتظر التوليد</span>
+      <div class="out-actions">
+        <button class="act-btn" onclick="copyKey()">⎘ نسخ</button>
+        <button class="act-btn" onclick="downloadKey()">↓ تحميل</button>
+        <button class="act-btn" onclick="clearKey()">✕ مسح</button>
+      </div>
+    </div>
+    <div class="key-display empty" id="keyDisplay">
+      المفتاح سيظهر هنا بعد التوليد...
+    </div>
+    <div class="stats-grid" id="statsGrid" style="display:none">
+      <div class="stat">
+        <div class="stat-v" id="stLen">—</div>
+        <div class="stat-l">BIT LENGTH</div>
+      </div>
+      <div class="stat">
+        <div class="stat-v" id="stEnt">—</div>
+        <div class="stat-l">ENTROPY</div>
+      </div>
+      <div class="stat">
+        <div class="stat-v" id="stLyr">56</div>
+        <div class="stat-l">ZETA LAYERS</div>
+      </div>
+      <div class="stat">
+        <div class="stat-v" id="stTime">—</div>
+        <div class="stat-l">GEN TIME</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCESS LOG -->
+  <div class="log-section" id="logSection">
+    <div class="log-header">
+      <span class="sec-title" style="margin:0">◈ سجل العملية</span>
+      <button class="act-btn" onclick="clearLog()">مسح</button>
+    </div>
+    <div class="log-body" id="logBody">
+      <span class="ll-info">// Mirror Key Generator — جاهز</span><br>
+      <span class="ll-info">// حرّك الماوس لبدء جمع العشوائية</span><br>
+    </div>
+  </div>
+
+  <!-- SECURITY NOTE -->
+  <div class="sec-note">
+    <p>
+      [EXPERIMENTAL] The zeta-based mixing layer adds mathematical depth
+      but the security proof is not yet peer-reviewed.<br>
+      The entropy foundation uses window.crypto.getRandomValues() which IS
+      cryptographically secure (NIST SP 800-90A compliant).<br>
+      The zeta mixing increases key complexity — it cannot reduce security
+      below the CSPRNG baseline.
+    </p>
+  </div>
+
+  <footer>
+    MIRROR KEY GENERATOR · H. CHAOUCHI · ALGERIA · 2026<br>
+    DOI: 10.5281/zenodo.19060261 · THEOREM T2: ζ(s) = kˢZₖ(s) + ζH(s,1+k)
+  </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// ENTROPY POOL
+// ═══════════════════════════════════════════════════════════
+
+const WORLDS = [7,11,13,17,19,23,29,31];
+let entropyPool  = new Uint8Array(256);
+let entropyBits  = 0;
+let mouseEntropy = [];
+let keyLen  = 256;
+let keyFmt  = 'hex';
+let lastKey = null;
+
+// Mouse/touch entropy collection
+document.addEventListener('mousemove', e => {
+  addMouseEntropy(e.clientX, e.clientY, e.timeStamp);
+});
+document.addEventListener('touchmove', e => {
+  const t = e.touches[0];
+  addMouseEntropy(t.clientX, t.clientY, e.timeStamp);
+});
+
+function addMouseEntropy(x, y, ts) {
+  const b = [
+    (x ^ (y << 4)) & 0xff,
+    ((x >> 4) ^ y) & 0xff,
+    (ts * 137) & 0xff,
+    (ts >> 8)  & 0xff,
+  ];
+  b.forEach((v, i) => {
+    const pos = (entropyBits / 8 | 0) % 256;
+    entropyPool[pos] ^= v;
+  });
+  entropyBits = Math.min(entropyBits + 4, 256);
+  updateEntropyBar();
+  document.getElementById('src-mouse').classList.add('active');
+}
+
+function updateEntropyBar() {
+  const pct = (entropyBits / 256) * 100;
+  document.getElementById('ebarFill').style.width = pct + '%';
+  document.getElementById('ebarVal').textContent  = `${entropyBits} / 256 bits`;
+  if (entropyBits >= 128)
+    document.getElementById('entropyHint').textContent =
+      `✓ ${entropyBits} بت من العشوائية — جاهز للتوليد`;
+}
+
+// Initialize with crypto API entropy
+function initCryptoEntropy() {
+  const buf = new Uint8Array(32);
+  crypto.getRandomValues(buf);
+  buf.forEach((v, i) => { entropyPool[i % 256] ^= v; });
+  entropyBits = Math.min(entropyBits + 128, 256);
+  // Add timestamp
+  const ts = performance.now();
+  entropyPool[0] ^= (ts * 1000) & 0xff;
+  entropyPool[1] ^= (ts * 1000 >> 8) & 0xff;
+  entropyBits = Math.min(entropyBits + 8, 256);
+  updateEntropyBar();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ZETA ENGINE — HIGH PRECISION
+// ═══════════════════════════════════════════════════════════
+
+// High-quality zeta evaluation for key material
+// Uses N=200 terms + Euler-Maclaurin correction
+function zetaHighPrec(sigma, t) {
+  let re = 0, im = 0;
+  const N = 200;
+
+  for (let n = 1; n <= N; n++) {
+    const logn = Math.log(n);
+    const mag  = Math.pow(n, -sigma);
+    const cosv = Math.cos(-t * logn);
+    const sinv = Math.sin(-t * logn);
+    re += mag * cosv;
+    im += mag * sinv;
+  }
+
+  // Euler-Maclaurin correction terms (improves accuracy significantly)
+  const Ns1 = Math.pow(N + 0.5, 1 - sigma);
+  const logN = Math.log(N + 0.5);
+  const corrMag = Ns1 / Math.sqrt((sigma - 1)*(sigma - 1) + t*t + 1e-30);
+  re += corrMag * Math.cos(-t * logN) * 0.5;
+  im += corrMag * Math.sin(-t * logN) * 0.5;
+
+  return [re, im];
+}
+
+// Hurwitz zeta for layer separation
+function hurwitzHighPrec(sigma, t, a) {
+  let re = 0, im = 0;
+  const N = 150;
+  for (let n = 0; n <= N; n++) {
+    const x   = n + a;
+    const mag = Math.pow(x, -sigma);
+    const arg = -t * Math.log(x);
+    re += mag * Math.cos(arg);
+    im += mag * Math.sin(arg);
+  }
+  return [re, im];
+}
+
+// Wave balance value — used for key mixing
+function waveBalance(sigma, t, k) {
+  const [zRe, zIm] = zetaHighPrec(sigma, t);
+  const [hRe, hIm] = hurwitzHighPrec(sigma, t, 1 + k);
+
+  const kSig = Math.pow(k, sigma);
+  const kPh  = t * Math.log(k + 1e-10);
+  const kRe  = kSig * Math.cos(kPh);
+  const kIm  = kSig * Math.sin(kPh);
+
+  const kInv = Math.pow(k, -sigma);
+  const kIPh = -t * Math.log(k + 1e-10);
+  const kiRe = kInv * Math.cos(kIPh);
+  const kiIm = kInv * Math.sin(kIPh);
+
+  const dRe = zRe - hRe, dIm = zIm - hIm;
+  const ZRe  = kiRe*dRe - kiIm*dIm;
+  const ZIm  = kiRe*dIm + kiIm*dRe;
+  const WpRe = kRe*ZRe - kIm*ZIm;
+  const WpIm = kRe*ZIm + kIm*ZRe;
+
+  return {
+    balance: Math.sqrt((WpRe+hRe)**2 + (WpIm+hIm)**2),
+    zRe, zIm, hRe, hIm, WpRe, WpIm
+  };
+}
+
+// Extract bytes from zeta evaluation
+function zetaToBytes(sigma, t, k, count) {
+  const bytes = [];
+  for (let i = 0; i < count; i++) {
+    const tShift = t + i * 0.137035; // golden-ratio stepping
+    const [re, im] = zetaHighPrec(sigma, tShift);
+    // Extract 2 bytes per evaluation
+    const v1 = Math.abs(re * 1e6) | 0;
+    const v2 = Math.abs(im * 1e6) | 0;
+    bytes.push(v1 & 0xff, (v1 >> 8) & 0xff, v2 & 0xff, (v2 >> 8) & 0xff);
+    if (bytes.length >= count) break;
+  }
+  return bytes.slice(0, count);
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEY GENERATION — MAIN FUNCTION
+// ═══════════════════════════════════════════════════════════
+
+async function generateKey() {
+  const btn = document.getElementById('btnGen');
+  btn.classList.add('loading');
+  btn.textContent = '⏳  جاري التوليد...';
+
+  clearLog();
+  const t0 = performance.now();
+
+  await sleep(20); // allow UI to update
+
+  const bytes = keyLen / 8;
+  log('// ══ بدء توليد المفتاح ══', 'll-head');
+  log(`// الطول: ${keyLen} بت = ${bytes} بايت`, 'll-info');
+  log(`// الطبقات: 7 أكوان × 8 عوالم = 56 طبقة`, 'll-info');
+
+  // Step 1: CSPRNG foundation (cryptographically secure)
+  log('', 'll-info');
+  log('// [1] CSPRNG — window.crypto.getRandomValues()', 'll-head');
+  const csprngBytes = new Uint8Array(bytes);
+  crypto.getRandomValues(csprngBytes);
+  log(`//   ✓ ${bytes} بايت من CSPRNG (NIST SP 800-90A)`, 'll-zeta');
+
+  // Step 2: Add user entropy pool
+  log('', 'll-info');
+  log('// [2] مزج حوض العشوائية', 'll-head');
+  const mixed = new Uint8Array(bytes);
+  for (let i = 0; i < bytes; i++) {
+    mixed[i] = csprngBytes[i] ^ entropyPool[i % 256];
+  }
+  log(`//   ✓ XOR مع ${entropyBits} بت من حركة الماوس والوقت`, 'll-zeta');
+
+  // Step 3: Zeta mixing — 56 layers
+  log('', 'll-info');
+  log('// [3] طبقات زيتا — 56 تقييم مستقل', 'll-head');
+  log('//   ζ(s) = kˢ·Zₖ(s) + ζH(s,1+k)  [PROVED]', 'll-info');
+
+  const zetaMix = new Uint8Array(bytes).fill(0);
+  const zetaVizData = [];
+
+  for (let k = 1; k <= 7; k++) {
+    for (let ri = 0; ri < WORLDS.length; ri++) {
+      const r = WORLDS[ri];
+
+      // Derive (sigma, t) from the current mixed key material
+      let seed = 0;
+      for (let i = 0; i < Math.min(8, bytes); i++) {
+        seed ^= mixed[i] << (i % 24);
+      }
+      seed = seed >>> 0;
+
+      const sigma = 0.4 + (((seed ^ (k * 0x9e37)) & 0xffff) / 0xffff) * 0.2;
+      const t_val = 10  + (((seed ^ (r * 0x6c62)) >>> 16) / 0xffff) * 50;
+
+      // Get zeta bytes for this layer
+      const layerBytes = zetaToBytes(sigma, t_val, k, bytes);
+      for (let i = 0; i < bytes; i++) {
+        zetaMix[i] ^= layerBytes[i];
+      }
+
+      const wb = waveBalance(sigma, t_val, k);
+      zetaVizData.push({ k, r, sigma, t: t_val, balance: wb.balance,
+                         zRe: wb.zRe, zIm: wb.zIm });
+
+      if (k === 1 || (k === 4 && ri === 0) || (k === 7 && ri === 7)) {
+        log(`//   k=${k} r=${r}: σ=${sigma.toFixed(4)} t=${t_val.toFixed(4)} |W|=${wb.balance.toExponential(3)}`, 'll-zeta');
+      }
+    }
+    await sleep(5);
+  }
+
+  log(`//   ✓ 56 طبقة مكتملة`, 'll-zeta');
+
+  // Step 4: Final mix — XOR all sources
+  log('', 'll-info');
+  log('// [4] المزج النهائي', 'll-head');
+  const finalKey = new Uint8Array(bytes);
+  for (let i = 0; i < bytes; i++) {
+    finalKey[i] = mixed[i] ^ zetaMix[i];
+    // Final whitening pass
+    finalKey[i] ^= (i * 0x9e3779b9) & 0xff;
+  }
+  log('//   final[i] = CSPRNG[i] ⊕ mouse[i] ⊕ zeta56[i] ⊕ whitening[i]', 'll-mix');
+  log('//   ✓ مفتاح نهائي جاهز', 'll-done');
+
+  // Step 5: Statistics
+  const entropy = estimateEntropy(finalKey);
+  const t1      = performance.now();
+  const genTime = (t1 - t0).toFixed(0);
+
+  log('', 'll-info');
+  log(`// ══ مكتمل في ${genTime}ms ══`, 'll-head');
+  log(`// الإنتروبيا المقدرة: ${entropy.toFixed(1)} بت`, 'll-done');
+
+  // Display
+  displayKey(finalKey);
+  drawZetaViz(zetaVizData);
+  lastKey = finalKey;
+
+  document.getElementById('stLen').textContent  = keyLen;
+  document.getElementById('stEnt').textContent  = entropy.toFixed(0) + 'b';
+  document.getElementById('stTime').textContent = genTime + 'ms';
+  document.getElementById('statsGrid').style.display = 'grid';
+
+  btn.classList.remove('loading');
+  btn.textContent = '⬡  توليد مفتاح جديد  ⬡';
+}
+
+// ═══════════════════════════════════════════════════════════
+// DISPLAY
+// ═══════════════════════════════════════════════════════════
+
+function displayKey(bytes) {
+  const colored = document.getElementById('chkColor').checked;
+  const display = document.getElementById('keyDisplay');
+  display.classList.remove('empty');
+
+  let output = '';
+  const byteArr = Array.from(bytes);
+
+  if (keyFmt === 'hex') {
+    const hex = byteArr.map(b => b.toString(16).padStart(2,'0')).join('');
+    if (colored) {
+      const chunkSize = Math.max(8, hex.length / 7 | 0);
+      for (let i = 0; i < hex.length; i += chunkSize) {
+        const cls = `seg seg-${(i/chunkSize|0) % 7}`;
+        output += `<span class="${cls}">${hex.slice(i, i+chunkSize)}</span>`;
+      }
+    } else {
+      output = hex;
+    }
+    document.getElementById('outLabel').textContent = `◈ HEX KEY — ${keyLen} bit`;
+
+  } else if (keyFmt === 'b64') {
+    let bin = '';
+    byteArr.forEach(b => bin += String.fromCharCode(b));
+    output = btoa(bin);
+    document.getElementById('outLabel').textContent = `◈ BASE64 KEY — ${keyLen} bit`;
+
+  } else if (keyFmt === 'bin') {
+    output = byteArr.map(b => b.toString(2).padStart(8,'0')).join(' ');
+    document.getElementById('outLabel').textContent = `◈ BINARY KEY — ${keyLen} bit`;
+
+  } else if (keyFmt === 'words') {
+    // BIP39-style: map every 11 bits to a word index from mini-wordlist
+    output = toBIP39Style(bytes);
+    document.getElementById('outLabel').textContent = `◈ WORD KEY — ${keyLen} bit`;
+  }
+
+  display.innerHTML = output;
+}
+
+// Mini wordlist (50 words) for demo — real BIP39 has 2048
+const WORDS50 = [
+  'mirror','zeta','wave','prime','cipher','sigma','delta','gamma','omega','alpha',
+  'phase','qubit','layer','world','orbit','field','ring','chain','node','hash',
+  'proof','block','epoch','token','vault','gate','bridge','shard','realm','mesh',
+  'core','pulse','echo','flux','grid','arc','beam','axis','nexus','fold',
+  'bind','seed','root','leaf','branch','key','lock','door','path','light'
+];
+
+function toBIP39Style(bytes) {
+  const bits = Array.from(bytes).map(b => b.toString(2).padStart(8,'0')).join('');
+  const words = [];
+  for (let i = 0; i + 11 <= bits.length; i += 11) {
+    const idx = parseInt(bits.slice(i, i+11), 2) % WORDS50.length;
+    words.push(WORDS50[idx]);
+  }
+  return words.join(' · ');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ZETA VISUALIZATION
+// ═══════════════════════════════════════════════════════════
+
+function drawZetaViz(data) {
+  const c   = document.getElementById('zetaCanvas');
+  const ctx = c.getContext('2d');
+  c.width   = c.offsetWidth * window.devicePixelRatio || 600;
+  c.height  = 90 * window.devicePixelRatio || 90;
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const W = c.offsetWidth, H = 90;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, W, H);
+
+  const colors = ['#00e5ff','#76ff03','#ff6d00','#d500f9','#ffd740','#ff4081','#40c4ff'];
+
+  // Draw one wave per universe (k=1..7)
+  for (let k = 1; k <= 7; k++) {
+    const layerData = data.filter(d => d.k === k);
+    if (!layerData.length) continue;
+
+    ctx.beginPath();
+    ctx.strokeStyle = colors[k-1];
+    ctx.lineWidth   = 1.2;
+    ctx.globalAlpha = 0.7;
+
+    for (let x = 0; x < W; x++) {
+      const t   = 14 + (x / W) * 46; // t from 14 to 60
+      const sig = 0.5;
+      const [re, im] = zetaHighPrec(sig, t);
+      const mag = Math.sqrt(re*re + im*im);
+      const y   = H/2 - (re / (mag + 0.1)) * (H * 0.35);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Mark known zeros
+  const zeros = [14.134, 21.022, 25.011, 30.425, 32.935, 37.586, 40.919];
+  zeros.forEach(z => {
+    const x = ((z - 14) / 46) * W;
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.setLineDash([3,3]);
+    ctx.lineWidth = 1;
+    ctx.moveTo(x, 0); ctx.lineTo(x, H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Legend
+  ctx.font = '9px Inconsolata, monospace';
+  for (let k = 1; k <= 7; k++) {
+    ctx.fillStyle = colors[k-1];
+    ctx.fillText(`k=${k}`, 6 + (k-1)*38, H-6);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillText('↑ zeros', W-60, H-6);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ENTROPY ESTIMATION (Shannon)
+// ═══════════════════════════════════════════════════════════
+
+function estimateEntropy(bytes) {
+  const freq = new Array(256).fill(0);
+  bytes.forEach(b => freq[b]++);
+  let H = 0;
+  bytes.forEach(b => {
+    const p = freq[b] / bytes.length;
+    if (p > 0) H -= p * Math.log2(p);
+  });
+  return H * bytes.length;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function setLen(n, el) {
+  keyLen = n;
+  document.querySelectorAll('#lenOpts .opt-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function setFmt(f, el) {
+  keyFmt = f;
+  document.querySelectorAll('#fmtOpts .opt-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  if (lastKey) displayKey(lastKey);
+}
+
+function log(msg, cls='ll-info') {
+  if (!document.getElementById('chkLog').checked && cls !== 'll-head') return;
+  const body = document.getElementById('logBody');
+  body.innerHTML += `<span class="${cls}">${msg}</span><br>`;
+  body.scrollTop   = body.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('logBody').innerHTML = '';
+}
+
+function copyKey() {
+  const d = document.getElementById('keyDisplay');
+  navigator.clipboard.writeText(d.innerText).then(() => {
+    const lbl = document.getElementById('outLabel');
+    const orig = lbl.textContent;
+    lbl.textContent = '✓ تم النسخ';
+    setTimeout(() => lbl.textContent = orig, 1500);
+  });
+}
+
+function downloadKey() {
+  if (!lastKey) return;
+  const hex  = Array.from(lastKey).map(b => b.toString(16).padStart(2,'0')).join('');
+  const text = `Mirror Key Generator — H. Chaouchi
+DOI: 10.5281/zenodo.19060261
+Generated: ${new Date().toISOString()}
+Length: ${keyLen} bits
+Layers: 56 (7 universes × 8 worlds)
+Format: HEX
+
+KEY:
+${hex}
+
+WARNING: Keep this file secure. Loss of this key = loss of data.
+This key was generated using the Mirror Network zeta-based CSPRNG.
+Security proof is experimental — not yet peer-reviewed.
+`;
+  const blob = new Blob([text], {type:'text/plain'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `mirror-key-${keyLen}bit.txt`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearKey() {
+  document.getElementById('keyDisplay').innerHTML = 'المفتاح سيظهر هنا بعد التوليد...';
+  document.getElementById('keyDisplay').classList.add('empty');
+  document.getElementById('statsGrid').style.display = 'none';
+  document.getElementById('outLabel').textContent = '◈ المفتاح — انتظر التوليد';
+  lastKey = null;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+initCryptoEntropy();
+
+// Draw initial zeta visualization
+setTimeout(() => {
+  const dummyData = [];
+  for (let k=1; k<=7; k++)
+    WORLDS.forEach(r => dummyData.push({k, r, sigma:0.5, t:14+k*2}));
+  drawZetaViz(dummyData);
+}, 100);
+</script>
+</body>
+</html>

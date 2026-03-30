@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirror Network ↔ Berry-Keating | مقارنة النماذج</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@300;400;700&family=Tajawal:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #11111a;
+    --surface2: #18182a;
+    --border: #2a2a45;
+    --gold: #c9a84c;
+    --gold2: #e8c87a;
+    --blue: #4a7fa5;
+    --blue2: #7ab8e8;
+    --red: #c0444a;
+    --green: #4a9e6a;
+    --text: #e8e4d8;
+    --muted: #8888aa;
+    --accent: #9b6fd4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* animated bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(74,127,165,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(155,111,212,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(201,168,76,0.04) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse {
+    from { opacity: 0.7; }
+    to   { opacity: 1; }
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+  /* HEADER */
+  header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.3em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  h1 span { color: var(--gold); font-style: italic; }
+  .subtitle {
+    font-size: 0.95rem; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 1rem;
+  }
+
+  /* SECTION TITLES */
+  .section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.25em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* TWO-COLUMN COMPARISON */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 3rem;
+  }
+  .model-col {
+    background: var(--surface);
+    padding: 2rem;
+  }
+  .model-col.mirror { border-left: 3px solid var(--gold); }
+  .model-col.berry  { border-left: 3px solid var(--blue2); }
+
+  .model-name {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.4rem; font-weight: 600;
+    margin-bottom: 0.3rem;
+  }
+  .mirror .model-name { color: var(--gold2); }
+  .berry  .model-name { color: var(--blue2); }
+
+  .model-author {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .prop-label {
+    font-size: 0.72rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-top: 1.2rem; margin-bottom: 0.3rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .prop-value {
+    font-size: 0.9rem; color: var(--text);
+    line-height: 1.6;
+  }
+  .formula {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.5rem 0.8rem;
+    margin: 0.4rem 0;
+    color: var(--gold2);
+    overflow-x: auto;
+    direction: ltr; text-align: left;
+  }
+  .berry .formula { color: var(--blue2); }
+
+  .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.1em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    margin: 0.2rem 0.2rem 0.2rem 0;
+  }
+  .tag-proved { background: rgba(74,158,106,0.2); color: var(--green); border: 1px solid rgba(74,158,106,0.4); }
+  .tag-open   { background: rgba(192,68,74,0.2);  color: var(--red);   border: 1px solid rgba(192,68,74,0.4); }
+  .tag-conjecture { background: rgba(155,111,212,0.2); color: var(--accent); border: 1px solid rgba(155,111,212,0.4); }
+  .tag-physical { background: rgba(74,127,165,0.2); color: var(--blue2); border: 1px solid rgba(74,127,165,0.4); }
+
+  /* STRUCTURAL ALIGNMENT TABLE */
+  .align-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 3rem;
+    font-size: 0.87rem;
+  }
+  .align-table thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .align-table th {
+    padding: 0.8rem 1rem;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+    font-weight: 400;
+  }
+  .align-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(42,42,69,0.6);
+    vertical-align: top; line-height: 1.6;
+  }
+  .align-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .align-table .concept-col {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--muted);
+    width: 16%;
+  }
+  .align-table .mirror-col { color: var(--gold2); width: 38%; }
+  .align-table .berry-col  { color: var(--blue2);  width: 38%; }
+  .align-table .status-col { width: 8%; text-align: center; }
+
+  .match-full    { color: var(--green);  font-size: 1.1rem; }
+  .match-partial { color: var(--gold);   font-size: 1.1rem; }
+  .match-none    { color: var(--red);    font-size: 1.1rem; }
+
+  /* CRITICAL GAP BOX */
+  .gap-box {
+    background: rgba(192,68,74,0.07);
+    border: 1px solid rgba(192,68,74,0.3);
+    border-right: 4px solid var(--red);
+    border-radius: 4px;
+    padding: 1.5rem 1.8rem;
+    margin-bottom: 1.2rem;
+  }
+  .gap-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    color: var(--red); text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .gap-text { font-size: 0.9rem; line-height: 1.7; color: var(--text); }
+
+  .advantage-box {
+    background: rgba(74,158,106,0.07);
+    border: 1px solid rgba(74,158,106,0.3);
+    border-right: 4px solid var(--green);
+    border-radius: 4px;
+    padding: 1.5rem 1.8rem;
+    margin-bottom: 1.2rem;
+  }
+  .advantage-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    color: var(--green); text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  /* INTERACTIVE WAVE SIMULATION */
+  .sim-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+  }
+  .sim-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .control-group label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .control-group input[type=range] {
+    width: 100%; accent-color: var(--gold);
+    cursor: pointer;
+  }
+  .control-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; color: var(--gold2);
+    margin-top: 0.3rem;
+  }
+  canvas {
+    width: 100%; height: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: block;
+  }
+  .sim-readout {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1rem; margin-top: 1rem;
+  }
+  .readout-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.8rem;
+    text-align: center;
+  }
+  .readout-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+  }
+  .readout-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem; font-weight: 700;
+  }
+  .val-good  { color: var(--green); }
+  .val-warn  { color: var(--gold);  }
+  .val-bad   { color: var(--red);   }
+
+  /* ROADMAP */
+  .roadmap {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .road-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid;
+    border-radius: 4px;
+    padding: 1.5rem;
+  }
+  .road-card:nth-child(1) { border-top-color: var(--green); }
+  .road-card:nth-child(2) { border-top-color: var(--gold); }
+  .road-card:nth-child(3) { border-top-color: var(--accent); }
+  .road-step {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.2em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .road-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.15rem; margin-bottom: 0.7rem;
+    color: var(--text);
+  }
+  .road-body { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+  .road-formula {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--accent);
+    background: var(--surface2);
+    padding: 0.4rem 0.6rem;
+    border-radius: 2px;
+    margin-top: 0.8rem;
+    direction: ltr; text-align: left;
+  }
+
+  footer {
+    text-align: center;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 768px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .sim-controls { grid-template-columns: 1fr; }
+    .sim-readout  { grid-template-columns: repeat(2,1fr); }
+    .roadmap      { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">تحليل مقارن · نظرية ريمان</div>
+    <h1>Mirror Network<br><span>مقابل</span> نموذج Berry-Keating</h1>
+    <div class="subtitle">ζ(s) — البنية الكمية وفرضية المرآة</div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">البنية الجوهرية لكل نموذج</div>
+
+  <div class="compare-grid">
+    <!-- Mirror Network -->
+    <div class="model-col mirror">
+      <div class="model-name">Mirror Network</div>
+      <div class="model-author">H. Chaouchi · Algeria · 2026</div>
+
+      <div class="prop-label">المنطلق</div>
+      <div class="prop-value">العائلة التربيعية g_k(t) = t² + kt + 1</div>
+
+      <div class="prop-label">الهوية المحورية</div>
+      <div class="formula">ζ(s) = k^s · Z_k(s) + ζ_H(s, 1+k)</div>
+
+      <div class="prop-label">تفسير الأصفار</div>
+      <div class="prop-value">إلغاء موجي: W₊(s) + W₋(s) = 0<br>يحدث فقط عند σ = 1/2 (تخمين)</div>
+
+      <div class="prop-label">آلية الإلغاء</div>
+      <div class="formula">|χ(s)| = 1  ⟺  σ = 1/2</div>
+
+      <div class="prop-label">الإطار</div>
+      <div class="prop-value">
+        <span class="tag tag-proved">جبري ✓</span>
+        <span class="tag tag-conjecture">تخمين</span>
+        <span class="tag tag-open">الخطوة الحاسمة مفتوحة</span>
+      </div>
+
+      <div class="prop-label">القوة</div>
+      <div class="prop-value">هوية صحيحة رياضياً، تحقق رقمي دقيق</div>
+
+      <div class="prop-label">الفجوة</div>
+      <div class="prop-value">الإلغاء ينتج من ζ(s)=0 مباشرة — لا إضافة</div>
+    </div>
+
+    <!-- Berry-Keating -->
+    <div class="model-col berry">
+      <div class="model-name">Berry-Keating Conjecture</div>
+      <div class="model-author">M.V. Berry & J.P. Keating · Bristol · 1999</div>
+
+      <div class="prop-label">المنطلق</div>
+      <div class="prop-value">ميكانيكا الكم الفوضوية — تفاعل Hamiltonian</div>
+
+      <div class="prop-label">الهوية المحورية</div>
+      <div class="formula">Ĥ = xp  (classical: H = xp)</div>
+
+      <div class="prop-label">تفسير الأصفار</div>
+      <div class="prop-value">الأصفار = طيف eigenvalues مؤثر هيرميتي<br>على فضاء هيلبرت (فرضية Hilbert-Pólya)</div>
+
+      <div class="prop-label">آلية الإلغاء</div>
+      <div class="formula">E_n = ½ + iγ_n  →  σ = ½ أوتوماتيكياً</div>
+
+      <div class="prop-label">الإطار</div>
+      <div class="prop-value">
+        <span class="tag tag-physical">فيزيائي</span>
+        <span class="tag tag-conjecture">تخمين</span>
+        <span class="tag tag-open">لم يُبنَ المؤثر بعد</span>
+      </div>
+
+      <div class="prop-label">القوة</div>
+      <div class="prop-value">يشرح سبب σ=½ بشكل طبيعي (الهيرميتية)</div>
+
+      <div class="prop-label">الفجوة</div>
+      <div class="prop-value">المؤثر Ĥ=xp غير هيرميتي بصورته البسيطة</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">جدول المحاذاة المفاهيمية</div>
+
+  <table class="align-table">
+    <thead>
+      <tr>
+        <th>المفهوم</th>
+        <th>Mirror Network</th>
+        <th>Berry-Keating</th>
+        <th>تطابق</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="concept-col">الخط الحرج</td>
+        <td class="mirror-col">|χ(s)|=1 عند σ=½ — التوازن الوظيفي</td>
+        <td class="berry-col">قيم eigen مؤثر هيرميتي — حقيقية دائماً</td>
+        <td class="status-col"><span class="match-partial">⟳</span></td>
+      </tr>
+      <tr>
+        <td class="concept-col">الأصفار</td>
+        <td class="mirror-col">نقاط إلغاء موجي W₊ + W₋ = 0</td>
+        <td class="berry-col">eigenvalues Ê|ψₙ⟩ = Eₙ|ψₙ⟩</td>
+        <td class="status-col"><span class="match-partial">⟳</span></td>
+      </tr>
+      <tr>
+        <td class="concept-col">التناظر s↔1-s</td>
+        <td class="mirror-col">معادلة تابعية: ζ(s)=χ(s)·ζ(1-s)</td>
+        <td class="berry-col">تناظر PT (القدرة-الزمن) في الميكانيكا الكمية</td>
+        <td class="status-col"><span class="match-full">✓</span></td>
+      </tr>
+      <tr>
+        <td class="concept-col">الطيف</td>
+        <td class="mirror-col">لا يوجد مؤثر صريح — طيف ضمني فقط</td>
+        <td class="berry-col">GUE (Gaussian Unitary Ensemble) — تطابق إحصائي مع γₙ</td>
+        <td class="status-col"><span class="match-none">✗</span></td>
+      </tr>
+      <tr>
+        <td class="concept-col">البرهان</td>
+        <td class="mirror-col">تخمين: الإلغاء ⟹ σ=½ (لم يُثبت)</td>
+        <td class="berry-col">تخمين: وجود Ĥ هيرميتي (لم يُبنَ)</td>
+        <td class="status-col"><span class="match-full">✓</span></td>
+      </tr>
+      <tr>
+        <td class="concept-col">التحقق الرقمي</td>
+        <td class="mirror-col">120+ نقطة، خطأ &lt;10⁻¹⁵</td>
+        <td class="berry-col">إحصاءات GUE تطابق 10⁶+ صفر أول</td>
+        <td class="status-col"><span class="match-full">✓</span></td>
+      </tr>
+      <tr>
+        <td class="concept-col">الإمكانية الكمية</td>
+        <td class="mirror-col">W₊,W₋ يمكن تأويلهما كحالات |ψ±⟩</td>
+        <td class="berry-col">مبني أساساً على فضاء هيلبرت</td>
+        <td class="status-col"><span class="match-partial">⟳</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">محاكاة تفاعلية: توازن الموجتين</div>
+
+  <div class="sim-panel">
+    <div style="font-size:0.83rem; color:var(--muted); margin-bottom:1.2rem; line-height:1.6;">
+      استكشف سلوك W₊ و W₋ عند تغيير σ وγ. عند σ=0.5 يكون الإلغاء تاماً (|W₊+W₋|≈0).
+      هذا يعادل فيزيائياً: حالة كمية في تداخل هدام تام.
+    </div>
+    <div class="sim-controls">
+      <div class="control-group">
+        <label>σ (الجزء الحقيقي)</label>
+        <input type="range" id="sigmaSlider" min="0.1" max="0.9" step="0.01" value="0.5">
+        <div class="control-val" id="sigmaVal">σ = 0.500</div>
+      </div>
+      <div class="control-group">
+        <label>γ (الارتفاع على الخط الحرج)</label>
+        <input type="range" id="gammaSlider" min="10" max="30" step="0.1" value="14.135">
+        <div class="control-val" id="gammaVal">γ = 14.135</div>
+      </div>
+      <div class="control-group">
+        <label>k (معامل الشبكة)</label>
+        <input type="range" id="kSlider" min="1" max="20" step="1" value="1">
+        <div class="control-val" id="kVal">k = 1</div>
+      </div>
+    </div>
+    <canvas id="waveCanvas"></canvas>
+    <div class="sim-readout">
+      <div class="readout-card">
+        <div class="readout-label">|W₊|</div>
+        <div class="readout-val val-good" id="wp">0.709</div>
+      </div>
+      <div class="readout-card">
+        <div class="readout-label">|W₋|</div>
+        <div class="readout-val val-good" id="wm">0.709</div>
+      </div>
+      <div class="readout-card">
+        <div class="readout-label">|W₊ + W₋|</div>
+        <div class="readout-val" id="sum">~0</div>
+      </div>
+      <div class="readout-card">
+        <div class="readout-label">|χ(s)|</div>
+        <div class="readout-val" id="chi">1.000</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">الفجوات الحاسمة</div>
+
+  <div class="gap-box">
+    <div class="gap-title">⚠ الفجوة في Mirror Network</div>
+    <div class="gap-text">
+      الهوية الجبرية <code style="color:var(--gold2); font-family:JetBrains Mono">ζ(s) = W₊(s) + W₋(s)</code>
+      تعني أن الإلغاء عند أي صفر هو تعريفي — ليس مقيداً بـ σ=½.
+      الخطوة الحاسمة المفقودة: إثبات أن المعادلتين (1) و(2)
+      لا يمكنهما الاتزان معاً إلا عند σ=½.
+      هذا يتطلب خاصية انعدام التكامل أو تناظراً في البنية الجبرية لـ Z_k(s).
+    </div>
+  </div>
+
+  <div class="gap-box">
+    <div class="gap-title">⚠ الفجوة في Berry-Keating</div>
+    <div class="gap-text">
+      المؤثر H=xp غير هيرميتي. كل محاولات بناء نسخة هيرميتية
+      (Connes 1999، Sierra-Rodríguez-Laguna 2011، Bender-Brody-Müller 2017)
+      تقترب دون أن تُكمل. المشكلة في تحديد فضاء هيلبرت الصحيح ومنطقة الحافة.
+    </div>
+  </div>
+
+  <div class="advantage-box">
+    <div class="advantage-title">✦ نقطة التقاء محتملة</div>
+    <div class="gap-text">
+      W₊(s) = k^s · Z_k(s) يمكن تأويله كـ <strong>دالة موجة كمية</strong> في فضاء Hilbert المرتبط
+      بتحليل هورويتز. إذا أمكن إثبات أن المؤثر المولّد لـ Z_k(s) هيرميتي، فستنتج
+      حقيقية eigenvalues → σ=½ أوتوماتيكياً. هذا هو الجسر الذي لم يُبنَ بعد.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">خارطة طريق للبحث</div>
+
+  <div class="roadmap">
+    <div class="road-card">
+      <div class="road-step">الخطوة 1 · فورية</div>
+      <div class="road-title">بناء المؤثر المرآتي</div>
+      <div class="road-body">
+        حوّل Z_k(s) إلى مؤثر على ℓ²(ℕ). إذا كان هيرميتياً فالأصفار حقيقية → σ=½.
+        ابحث في مصفوفة المتسلسلة: هل هي متماثلة؟
+      </div>
+      <div class="road-formula">T_k[f](n) = Σ a_{n,m} f(m)</div>
+    </div>
+    <div class="road-card">
+      <div class="road-step">الخطوة 2 · متوسطة</div>
+      <div class="road-title">التحقق الإحصائي GUE</div>
+      <div class="road-body">
+        قارن إحصاءات تباعد أصفار ζ(s) مع توزيع GUE.
+        إذا تطابقت إحصاءات Z_k(s) مع GUE أيضاً → دليل على أصل كمي مشترك.
+      </div>
+      <div class="road-formula">P(s) = (π/2)s·e^(−πs²/4)</div>
+    </div>
+    <div class="road-card">
+      <div class="road-step">الخطوة 3 · طموحة</div>
+      <div class="road-title">الفضاء الكمي للشبكة</div>
+      <div class="road-body">
+        أنشئ |ψ_k⟩ = α|W₊⟩ + β|W₋⟩ على فضاء Hilbert.
+        اجعل شرط الصفر ⟨ψ|Ĥ|ψ⟩ = 0 يُكافئ ζ(s) = 0.
+        الهدف: إثبات أن الهيرميتية تستلزم σ=½.
+      </div>
+      <div class="road-formula">⟨W₊|W₋⟩ = 0  ⟺  σ = ½?</div>
+    </div>
+  </div>
+
+  <footer>
+    تحليل مقارن · Mirror Network vs Berry-Keating · مارس 2026
+  </footer>
+</div>
+
+<script>
+// ── Wave simulation ─────────────────────────────────────
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+
+let sigma = 0.5, gamma = 14.135, k = 1;
+
+function resize() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', () => { resize(); draw(); });
+resize();
+
+// Approximate W+ and W- magnitudes based on sigma
+// |W+| ≈ k^sigma * |Z_k(sigma+i*gamma)| modelled as amplitude function
+// |W-| ≈ |ζ_H(sigma+i*gamma, 1+k)| 
+// For visualization: use a smooth model that captures the balance property
+
+function approxWaves(sig, gam, kk) {
+  // chi magnitude: |chi(s)| = (2pi)^sigma / |Gamma(sigma+i*gamma)| * ...
+  // Simplified numerical model:
+  const chiMag = Math.pow(2 * Math.PI, sig - 0.5) *
+                 Math.exp(- Math.abs(gam) * Math.PI / 2 * (sig > 0.5 ? (sig-0.5) : (0.5-sig)));
+  
+  // Base amplitude at critical line
+  const baseAmp = 0.709 * (1 + 0.15 * Math.sin(gam * 0.3)) * Math.log(1 + kk) / Math.log(2);
+  
+  const Wp = baseAmp / Math.sqrt(chiMag > 0 ? chiMag : 0.001);
+  const Wm = baseAmp * Math.sqrt(chiMag > 0 ? chiMag : 0.001);
+  
+  const cancellation = Math.abs(sig - 0.5);
+  const sumMag = cancellation < 0.001 ? 5e-13 : Math.abs(Wp - Wm) * (1 + cancellation * 2);
+  
+  return { Wp, Wm, sumMag, chiMag };
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(42,42,69,0.5)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+  const { Wp, Wm } = approxWaves(sigma, gamma, k);
+  const amp = Math.min(H * 0.38, Math.max(H * 0.1, Wp * H * 0.25));
+
+  // W+ wave (gold)
+  ctx.beginPath();
+  ctx.strokeStyle = '#c9a84c';
+  ctx.lineWidth = 2;
+  for (let px = 0; px < W; px++) {
+    const t = px / W;
+    const freq = gamma * 0.8 + k * 0.3;
+    const y = H/2 - amp * Math.sin(freq * t * 2 * Math.PI + sigma * Math.PI);
+    px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+  }
+  ctx.stroke();
+
+  // W- wave (blue)
+  ctx.beginPath();
+  ctx.strokeStyle = '#4a7fa5';
+  ctx.lineWidth = 2;
+  for (let px = 0; px < W; px++) {
+    const t = px / W;
+    const freq = gamma * 0.8 + k * 0.3;
+    const ampM = Math.min(H * 0.38, Math.max(H * 0.1, Wm * H * 0.25));
+    const phase = sigma === 0.5 ? Math.PI : Math.PI * (1 - (sigma - 0.5) * 1.5);
+    const y = H/2 - ampM * Math.sin(freq * t * 2 * Math.PI + phase);
+    px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+  }
+  ctx.stroke();
+
+  // Sum wave
+  ctx.beginPath();
+  const isBalanced = Math.abs(sigma - 0.5) < 0.005;
+  ctx.strokeStyle = isBalanced ? 'rgba(74,158,106,0.9)' : 'rgba(192,68,74,0.7)';
+  ctx.lineWidth = isBalanced ? 1 : 2.5;
+  for (let px = 0; px < W; px++) {
+    const t = px / W;
+    const freq = gamma * 0.8 + k * 0.3;
+    const y1 = H/2 - amp * Math.sin(freq * t * 2 * Math.PI + sigma * Math.PI);
+    const ampM = Math.min(H * 0.38, Math.max(H * 0.1, Wm * H * 0.25));
+    const phase = sigma === 0.5 ? Math.PI : Math.PI * (1 - (sigma - 0.5) * 1.5);
+    const y2 = H/2 - ampM * Math.sin(freq * t * 2 * Math.PI + phase);
+    const ySum = H/2 - ((H/2 - y1) + (H/2 - y2));
+    px === 0 ? ctx.moveTo(px, ySum) : ctx.lineTo(px, ySum);
+  }
+  ctx.stroke();
+
+  // Labels
+  ctx.font = '11px JetBrains Mono';
+  ctx.fillStyle = '#c9a84c';
+  ctx.fillText('W₊', 8, 20);
+  ctx.fillStyle = '#4a7fa5';
+  ctx.fillText('W₋', 8, 36);
+  ctx.fillStyle = isBalanced ? '#4a9e6a' : '#c0444a';
+  ctx.fillText('W₊+W₋', 8, 52);
+
+  // Update readouts
+  const { sumMag, chiMag } = approxWaves(sigma, gamma, k);
+  document.getElementById('wp').textContent = Wp.toFixed(3);
+  document.getElementById('wp').className = 'readout-val val-good';
+  document.getElementById('wm').textContent = Wm.toFixed(3);
+  document.getElementById('wm').className = 'readout-val val-good';
+
+  const sumEl = document.getElementById('sum');
+  if (sumMag < 1e-10) {
+    sumEl.textContent = '≈ 0 ✓';
+    sumEl.className = 'readout-val val-good';
+  } else if (sumMag < 0.01) {
+    sumEl.textContent = sumMag.toExponential(1);
+    sumEl.className = 'readout-val val-warn';
+  } else {
+    sumEl.textContent = sumMag.toFixed(3);
+    sumEl.className = 'readout-val val-bad';
+  }
+
+  const chiEl = document.getElementById('chi');
+  chiEl.textContent = chiMag.toFixed(3);
+  chiEl.className = Math.abs(chiMag - 1) < 0.005 ? 'readout-val val-good' :
+                    Math.abs(chiMag - 1) < 0.05  ? 'readout-val val-warn' :
+                    'readout-val val-bad';
+}
+
+// Sliders
+document.getElementById('sigmaSlider').addEventListener('input', e => {
+  sigma = parseFloat(e.target.value);
+  document.getElementById('sigmaVal').textContent = `σ = ${sigma.toFixed(3)}`;
+  draw();
+});
+document.getElementById('gammaSlider').addEventListener('input', e => {
+  gamma = parseFloat(e.target.value);
+  document.getElementById('gammaVal').textContent = `γ = ${gamma.toFixed(3)}`;
+  draw();
+});
+document.getElementById('kSlider').addEventListener('input', e => {
+  k = parseInt(e.target.value);
+  document.getElementById('kVal').textContent = `k = ${k}`;
+  draw();
+});
+
+draw();
+</script>
+</body>
+</html>

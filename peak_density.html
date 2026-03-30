@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>كثافة الأعداد الأولية عند القمم — شبكة المرايا</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cairo:wght@400;700;900&display=swap');
+:root{
+  --bg:#05080f;--panel:#090e1a;--border:#141f35;
+  --text:#6b8caa;--bright:#d4eaf7;--dim:#1e3050;
+  --accent:#00e5ff;--gold:#ffc740;--green:#00ff9d;
+  --red:#ff3d5a;--purple:#b060ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 25%,rgba(0,229,255,.04),transparent 60%),
+             radial-gradient(ellipse 60% 40% at 85% 75%,rgba(176,96,255,.04),transparent 60%);
+  pointer-events:none;z-index:0;}
+header{position:relative;z-index:10;padding:1.2rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;}
+.logo{width:44px;height:44px;border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--accent);box-shadow:0 0 20px rgba(0,229,255,.3);animation:glow 3s ease-in-out infinite;flex-shrink:0;}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3);}50%{box-shadow:0 0 40px rgba(0,229,255,.6);}}
+.htxt h1{font-family:'Cairo',sans-serif;font-size:1.15rem;font-weight:900;color:var(--bright);}
+.htxt p{font-size:.55rem;color:var(--dim);margin-top:.15rem;letter-spacing:.1em;}
+
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 74px);}
+.sb{background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:.8rem;}
+.blk{padding:.7rem .5rem;border-bottom:1px solid var(--border);margin-bottom:.5rem;}
+.blk h3{font-size:.52rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.6rem;}
+.row{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;}
+.row label{font-size:.58rem;color:var(--text);min-width:90px;}
+input[type=number]{flex:1;background:rgba(0,50,100,.3);border:1px solid var(--border);border-radius:3px;color:var(--bright);padding:.25rem .4rem;font-family:'Space Mono',monospace;font-size:.62rem;outline:none;}
+input:focus{border-color:var(--accent);}
+.btn{width:100%;background:rgba(0,100,200,.2);border:1px solid var(--accent);color:var(--accent);padding:.45rem;border-radius:4px;font-family:'Space Mono',monospace;font-size:.65rem;cursor:pointer;transition:all .2s;margin-top:.4rem;}
+.btn:hover{background:rgba(0,229,255,.15);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.pw{height:3px;background:var(--border);border-radius:2px;margin-top:.45rem;overflow:hidden;display:none;}
+.pb{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .3s;}
+
+/* stat cards */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem;}
+.stat{background:rgba(0,20,50,.4);border:1px solid var(--border);border-radius:5px;padding:.5rem .6rem;text-align:center;}
+.stat-val{font-size:1.1rem;font-weight:700;color:var(--accent);}
+.stat-lbl{font-size:.5rem;color:var(--dim);margin-top:.15rem;line-height:1.5;}
+.stat.peak .stat-val{color:var(--green);}
+.stat.nonpeak .stat-val{color:var(--purple);}
+
+.verdict-box{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:5px;padding:.65rem .8rem;font-size:.6rem;line-height:2;margin-top:.4rem;}
+.v-yes{color:var(--green);font-weight:700;}
+.v-no{color:var(--red);font-weight:700;}
+.v-neutral{color:var(--gold);font-weight:700;}
+
+.main{display:flex;flex-direction:column;padding:.9rem 1.1rem;gap:.8rem;overflow-y:auto;}
+.cwrap{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem;}
+.ctitle{font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:.4rem;}
+canvas{display:block;width:100%;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:var(--panel);}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <div class="htxt">
+    <h1>كثافة الأوليات عند القمم الدورية</h1>
+    <p>H. CHAOUCHI 2026 · PEAK PRIME DENSITY · k₀ + 30n ANALYSIS</p>
+  </div>
+</header>
+<div class="layout">
+  <div class="sb">
+    <div class="blk">
+      <h3>⟁ الإعداد</h3>
+      <div class="row"><label>النطاق الأقصى</label><input type="number" id="rangeMax" value="10000" min="1000" max="500000" step="1000"></div>
+      <div class="row"><label>k₀ الأول (قمة)</label><input type="number" id="k0" value="22" min="0" max="29"></div>
+      <div class="row"><label>نافذة الاختبار ±</label><input type="number" id="window" value="5" min="1" max="15"></div>
+      <button class="btn" id="btnRun">▶ تشغيل التحليل</button>
+      <div class="pw" id="pw"><div class="pb" id="pb"></div></div>
+    </div>
+
+    <div class="blk">
+      <h3>◈ إحصائيات المقارنة</h3>
+      <div class="stat-grid">
+        <div class="stat peak">
+          <div class="stat-val" id="peakCount">—</div>
+          <div class="stat-lbl">أوليات<br>عند القمم</div>
+        </div>
+        <div class="stat nonpeak">
+          <div class="stat-val" id="nonpeakCount">—</div>
+          <div class="stat-lbl">أوليات<br>خارج القمم</div>
+        </div>
+        <div class="stat peak">
+          <div class="stat-val" id="peakDensity">—</div>
+          <div class="stat-lbl">كثافة القمم<br>أولي/نافذة</div>
+        </div>
+        <div class="stat nonpeak">
+          <div class="stat-val" id="nonpeakDensity">—</div>
+          <div class="stat-lbl">كثافة الباقي<br>أولي/نافذة</div>
+        </div>
+      </div>
+      <div class="stat-grid" style="margin-top:.4rem;">
+        <div class="stat" style="grid-column:1/-1;">
+          <div class="stat-val" id="ksScore" style="color:var(--gold)">—</div>
+          <div class="stat-lbl">فرق KS بين التوزيعين (0=متطابق، 1=مختلف تماماً)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="blk">
+      <h3>★ الحكم</h3>
+      <div class="verdict-box" id="verdict"><span style="color:var(--dim)">—</span></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="cwrap">
+      <div class="ctitle">كثافة الأوليات لكل نافذة k — أخضر=قمة، بنفسجي=غير قمة</div>
+      <canvas id="cDensity" height="220"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">توزيع تراكمي للأوليات — هل القمم تتركز في مناطق مختلفة؟</div>
+      <canvas id="cCDF" height="200"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">الفجوات بين الأوليات — هل هي متشابهة في القمم والغير قمم؟</div>
+      <canvas id="cGaps" height="190"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">خريطة حرارية — توزيع الأوليات عبر النطاق (كل خلية = 500 عدد)</div>
+      <canvas id="cHeat" height="120"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+function sieve(N){
+  const s=new Uint8Array(N+1).fill(1);s[0]=s[1]=0;
+  for(let i=2;i*i<=N;i++)if(s[i])for(let j=i*i;j<=N;j+=i)s[j]=0;
+  const r=[];for(let i=2;i<=N;i++)if(s[i])r.push(i);return r;
+}
+
+const PERIOD = 30;
+let peakPrimes=[], nonpeakPrimes=[], windowData=[];
+
+document.getElementById('btnRun').addEventListener('click', async ()=>{
+  const N    = +document.getElementById('rangeMax').value || 10000;
+  const k0   = +document.getElementById('k0').value || 22;
+  const win  = +document.getElementById('window').value || 5;
+
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('pw').style.display='block';
+  document.getElementById('pb').style.width='10%';
+
+  const allPrimes = sieve(N);
+  const primeSet  = new Set(allPrimes);
+
+  document.getElementById('pb').style.width='40%';
+  await new Promise(r=>setTimeout(r,0));
+
+  // القمم تقع عند k0, k0+30, k0+60, ...
+  // نافذة كل قمة: [kPeak - win, kPeak + win] داخل النطاق
+  const peakCenters = [];
+  for(let k = k0 % PERIOD; k <= N; k += PERIOD) peakCenters.push(k);
+  // أيضاً النمط الثاني k0+30n للقمم المتكررة
+  // نبني مجموعة النوافذ
+  const peakIntervals = new Set();
+  peakCenters.forEach(c=>{
+    for(let x=c-win; x<=c+win; x++) if(x>=2) peakIntervals.add(x);
+  });
+
+  peakPrimes    = allPrimes.filter(p => peakIntervals.has(p));
+  nonpeakPrimes = allPrimes.filter(p => !peakIntervals.has(p) && p>=2);
+
+  // بناء بيانات النوافذ للرسم
+  windowData = [];
+  for(let i=0; i<peakCenters.length; i++){
+    const c = peakCenters[i];
+    const lo = Math.max(2, c-win), hi = Math.min(N, c+win);
+    const cnt = allPrimes.filter(p=>p>=lo&&p<=hi).length;
+    windowData.push({c, cnt, isPeak:true});
+
+    // نافذة مجاورة (لا قمة)
+    const c2 = c + Math.floor(PERIOD/2);
+    if(c2+win <= N){
+      const lo2=c2-win, hi2=c2+win;
+      const cnt2 = allPrimes.filter(p=>p>=lo2&&p<=hi2).length;
+      windowData.push({c:c2, cnt:cnt2, isPeak:false});
+    }
+  }
+  windowData.sort((a,b)=>a.c-b.c);
+
+  document.getElementById('pb').style.width='80%';
+  await new Promise(r=>setTimeout(r,0));
+
+  // إحصائيات
+  const peakWindows    = windowData.filter(w=>w.isPeak);
+  const nonpeakWindows = windowData.filter(w=>!w.isPeak);
+  const avgPeak    = peakWindows.reduce((s,w)=>s+w.cnt,0)/(peakWindows.length||1);
+  const avgNonpeak = nonpeakWindows.reduce((s,w)=>s+w.cnt,0)/(nonpeakWindows.length||1);
+
+  // KS distance بين التوزيعين التراكميين
+  const ksScore = computeKS(peakPrimes, nonpeakPrimes, N);
+
+  document.getElementById('peakCount').textContent    = peakPrimes.length;
+  document.getElementById('nonpeakCount').textContent = nonpeakPrimes.length;
+  document.getElementById('peakDensity').textContent  = avgPeak.toFixed(2);
+  document.getElementById('nonpeakDensity').textContent = avgNonpeak.toFixed(2);
+  document.getElementById('ksScore').textContent      = ksScore.toFixed(4);
+
+  renderVerdict(avgPeak, avgNonpeak, ksScore);
+
+  document.getElementById('pb').style.width='100%';
+  await new Promise(r=>setTimeout(r,0));
+
+  drawDensity();
+  drawCDF(allPrimes, N);
+  drawGaps();
+  drawHeatmap(allPrimes, N);
+
+  document.getElementById('btnRun').disabled=false;
+});
+
+function computeKS(arr1, arr2, N){
+  if(!arr1.length||!arr2.length) return 1;
+  const bins=200;
+  const step=N/bins;
+  let maxD=0;
+  let c1=0,c2=0;
+  for(let b=0;b<bins;b++){
+    const lo=b*step, hi=(b+1)*step;
+    c1+=arr1.filter(p=>p>=lo&&p<hi).length;
+    c2+=arr2.filter(p=>p>=lo&&p<hi).length;
+    const d=Math.abs(c1/arr1.length - c2/arr2.length);
+    if(d>maxD)maxD=d;
+  }
+  return maxD;
+}
+
+function renderVerdict(avgPeak, avgNonpeak, ks){
+  const el=document.getElementById('verdict');
+  const diff=Math.abs(avgPeak-avgNonpeak);
+  const pct=(diff/Math.max(avgNonpeak,0.001)*100).toFixed(1);
+  const similar = ks < 0.05;
+  const bigDiff = diff > 0.5;
+
+  if(similar && !bigDiff){
+    el.innerHTML=`<span class="v-yes">✓ التوزيع متشابه جداً</span><br>
+    فرق KS = ${ks.toFixed(4)} (قريب من صفر)<br>
+    كثافة القمم: ${avgPeak.toFixed(2)} | الباقي: ${avgNonpeak.toFixed(2)}<br>
+    ← الأعداد الأولية تتوزع بنفس الكثافة في القمم وخارجها.<br>
+    ← القمم لا تجذب ولا تنفر الأوليات — سلوك عشوائي موحد.`;
+  } else if(bigDiff){
+    el.innerHTML=`<span class="v-no">◉ فرق واضح في الكثافة</span><br>
+    كثافة القمم: ${avgPeak.toFixed(2)} | الباقي: ${avgNonpeak.toFixed(2)}<br>
+    فرق: ${pct}% | KS = ${ks.toFixed(4)}<br>
+    ← القمم ${avgPeak>avgNonpeak?'تجذب':'تنفر'} الأعداد الأولية بشكل ملحوظ.`;
+  } else {
+    el.innerHTML=`<span class="v-neutral">⚠ فرق طفيف</span><br>
+    كثافة القمم: ${avgPeak.toFixed(2)} | الباقي: ${avgNonpeak.toFixed(2)}<br>
+    فرق: ${pct}% | KS = ${ks.toFixed(4)}<br>
+    ← الفرق موجود لكن صغير — قد يكون إحصائياً غير دال.`;
+  }
+}
+
+function setupCanvas(id,h){
+  const c=document.getElementById(id);
+  const W=c.parentElement.clientWidth-20;
+  c.width=W;c.height=h;
+  return{c,ctx:c.getContext('2d'),W,H:h};
+}
+
+function drawDensity(){
+  const {ctx,W,H}=setupCanvas('cDensity',220);
+  ctx.clearRect(0,0,W,H);
+  if(!windowData.length)return;
+  const pad={l:40,r:15,t:20,b:35};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  const maxCnt=Math.max(...windowData.map(w=>w.cnt),1);
+  const bW=Math.max(3, cW/windowData.length - 1);
+
+  // grid
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxCnt*(1-i/4)),pad.l-3,y+3);
+  }
+
+  windowData.forEach((w,i)=>{
+    const x=pad.l+(i/windowData.length)*cW;
+    const h2=(w.cnt/maxCnt)*cH;
+    ctx.fillStyle=w.isPeak?'rgba(0,255,157,0.75)':'rgba(176,96,255,0.5)';
+    ctx.fillRect(x, pad.t+cH-h2, bW, h2);
+  });
+
+  // legend
+  ctx.fillStyle='rgba(0,255,157,.9)';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('■ نافذة قمة',pad.l,pad.t-6);
+  ctx.fillStyle='rgba(176,96,255,.9)';
+  ctx.fillText('■ نافذة عادية',pad.l+80,pad.t-6);
+
+  // محور x
+  ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='center';
+  ctx.fillText('موقع النافذة (n)',pad.l+cW/2,H-4);
+}
+
+function drawCDF(allPrimes, N){
+  const {ctx,W,H}=setupCanvas('cCDF',200);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:45,r:15,t:20,b:35};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  const toX=v=>pad.l+(v/N)*cW;
+  const toY=(v,tot)=>pad.t+((1-v/tot)*cH);
+
+  // grid
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText((100-i*25)+'%',pad.l-3,y+3);
+  }
+
+  // CDF القمم
+  ctx.strokeStyle='rgba(0,255,157,0.9)';ctx.lineWidth=2;
+  ctx.beginPath();
+  let c=0;
+  peakPrimes.forEach((p,i)=>{
+    c++;
+    const x=toX(p), y=toY(c,peakPrimes.length);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // CDF غير القمم
+  ctx.strokeStyle='rgba(176,96,255,0.9)';ctx.lineWidth=2;
+  ctx.beginPath();
+  c=0;
+  nonpeakPrimes.forEach((p,i)=>{
+    c++;
+    const x=toX(p), y=toY(c,nonpeakPrimes.length);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // labels
+  ctx.fillStyle='rgba(0,255,157,.9)';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('— توزيع القمم',pad.l+4,pad.t+12);
+  ctx.fillStyle='rgba(176,96,255,.9)';
+  ctx.fillText('— توزيع غير القمم',pad.l+4,pad.t+24);
+  ctx.fillStyle='#1e3050';ctx.textAlign='center';
+  ctx.fillText('قيمة العدد الأولي',pad.l+cW/2,H-4);
+}
+
+function drawGaps(){
+  const {ctx,W,H}=setupCanvas('cGaps',190);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:45,r:15,t:20,b:35};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  function gapHist(primes){
+    const gaps={};
+    for(let i=1;i<primes.length;i++){
+      const g=primes[i]-primes[i-1];
+      gaps[g]=(gaps[g]||0)+1;
+    }
+    return gaps;
+  }
+  const gP=gapHist(peakPrimes);
+  const gN=gapHist(nonpeakPrimes);
+  const allGaps=[...new Set([...Object.keys(gP),...Object.keys(gN)].map(Number))].sort((a,b)=>a-b).slice(0,30);
+
+  const maxV=Math.max(...allGaps.map(g=>Math.max(gP[g]||0,gN[g]||0)),1);
+  const bW=cW/allGaps.length/2-1;
+
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+  }
+
+  allGaps.forEach((g,i)=>{
+    const x=pad.l+(i/allGaps.length)*cW;
+    const vP=(gP[g]||0)/maxV*cH;
+    const vN=(gN[g]||0)/maxV*cH;
+
+    ctx.fillStyle='rgba(0,255,157,0.75)';
+    ctx.fillRect(x, pad.t+cH-vP, bW, vP);
+    ctx.fillStyle='rgba(176,96,255,0.6)';
+    ctx.fillRect(x+bW+1, pad.t+cH-vN, bW, vN);
+
+    if(i%3===0){
+      ctx.fillStyle='#1e3050';ctx.font='7px Space Mono';ctx.textAlign='center';
+      ctx.fillText(g, x+bW, H-5);
+    }
+  });
+
+  ctx.fillStyle='rgba(0,255,157,.9)';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('■ فجوات القمم',pad.l,pad.t-6);
+  ctx.fillStyle='rgba(176,96,255,.9)';
+  ctx.fillText('■ فجوات غير القمم',pad.l+90,pad.t-6);
+  ctx.fillStyle='#1e3050';ctx.textAlign='center';
+  ctx.fillText('حجم الفجوة بين الأوليات المتتالية',pad.l+cW/2,H-4+10);
+}
+
+function drawHeatmap(allPrimes, N){
+  const {ctx,W,H}=setupCanvas('cHeat',120);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:40,r:15,t:25,b:20};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  const bins=Math.min(100, Math.floor(N/100));
+  const step=N/bins;
+
+  // كثافة القمم وغير القمم في كل قطاع
+  const peakSet=new Set(peakPrimes);
+  const densP=[], densN=[];
+  for(let b=0;b<bins;b++){
+    const lo=b*step, hi=(b+1)*step;
+    const inBin=allPrimes.filter(p=>p>=lo&&p<hi);
+    densP.push(inBin.filter(p=>peakSet.has(p)).length);
+    densN.push(inBin.filter(p=>!peakSet.has(p)).length);
+  }
+  const maxD=Math.max(...densP,...densN,1);
+  const bW=cW/bins;
+  const rowH=cH/2-2;
+
+  ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+  ctx.fillText('قمم',pad.l-3,pad.t+rowH/2+3);
+  ctx.fillText('باقي',pad.l-3,pad.t+rowH+4+rowH/2+3);
+
+  for(let b=0;b<bins;b++){
+    const x=pad.l+b*bW;
+    const tP=densP[b]/maxD;
+    const tN=densN[b]/maxD;
+    const gP2=Math.round(tP*255);
+    const gN2=Math.round(tN*200);
+    ctx.fillStyle=`rgb(0,${gP2},${Math.round(255*(1-tP))})`;
+    ctx.fillRect(x,pad.t,bW-1,rowH);
+    ctx.fillStyle=`rgb(${Math.round(tN*176)},0,${Math.round(255*(1-tN))})`;
+    ctx.fillRect(x,pad.t+rowH+4,bW-1,rowH);
+  }
+
+  // scale labels
+  ctx.fillStyle='#1e3050';ctx.font='7px Space Mono';ctx.textAlign='center';
+  for(let i=0;i<=4;i++){
+    const x=pad.l+(i/4)*cW;
+    ctx.fillText(Math.round(i/4*N).toLocaleString(),x,H-2);
+  }
+
+  ctx.fillStyle='#d4eaf7';ctx.font='bold 9px Space Mono';ctx.textAlign='left';
+  ctx.fillText('خريطة الكثافة عبر النطاق كاملاً',pad.l,pad.t-8);
+}
+
+window.addEventListener('load',()=>setTimeout(()=>document.getElementById('btnRun').click(),300));
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>متنبئ الأعداد الأولية — شبكة المرايا</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cairo:wght@400;700;900&display=swap');
+:root{
+  --bg:#05080f;--panel:#090e1a;--border:#141f35;
+  --text:#6b8caa;--bright:#d4eaf7;--dim:#1e3050;
+  --accent:#00e5ff;--gold:#ffc740;--green:#00ff9d;
+  --red:#ff3d5a;--purple:#b060ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 20% 30%,rgba(0,229,255,.05),transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 70%,rgba(176,96,255,.05),transparent 60%);
+  pointer-events:none;}
+header{text-align:center;margin-bottom:1.5rem;position:relative;z-index:1;}
+.logo{width:52px;height:52px;border:2px solid var(--accent);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--accent);
+  box-shadow:0 0 30px rgba(0,229,255,.4);animation:glow 3s ease-in-out infinite;margin:0 auto .7rem;}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3);}50%{box-shadow:0 0 50px rgba(0,229,255,.7);}}
+h1{font-family:'Cairo',sans-serif;font-size:1.3rem;font-weight:900;color:var(--bright);}
+.sub{font-size:.52rem;color:var(--dim);margin-top:.2rem;letter-spacing:.1em;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1.3rem 1.8rem;width:100%;max-width:580px;position:relative;z-index:1;margin-bottom:1rem;}
+.input-row{display:flex;gap:.6rem;align-items:center;margin-bottom:.8rem;}
+input[type=number]{flex:1;background:rgba(0,50,100,.3);border:2px solid var(--border);border-radius:8px;
+  color:var(--bright);padding:.6rem .9rem;font-family:'Space Mono',monospace;font-size:1.1rem;
+  outline:none;text-align:center;transition:border-color .2s;}
+input[type=number]:focus{border-color:var(--accent);box-shadow:0 0 15px rgba(0,229,255,.2);}
+.go-btn{background:rgba(0,100,200,.25);border:2px solid var(--accent);color:var(--accent);
+  padding:.6rem 1.4rem;border-radius:8px;font-family:'Space Mono',monospace;font-size:.85rem;
+  cursor:pointer;transition:all .2s;white-space:nowrap;}
+.go-btn:hover{background:rgba(0,229,255,.2);}
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.4rem;}
+.mbtn{background:rgba(0,20,50,.4);border:1px solid var(--border);color:var(--text);
+  padding:.4rem .3rem;border-radius:6px;font-family:'Space Mono',monospace;font-size:.55rem;
+  cursor:pointer;text-align:center;line-height:1.6;transition:all .15s;}
+.mbtn:hover{border-color:rgba(0,229,255,.4);color:var(--accent);}
+.mbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.08);}
+.result{display:none;}
+.result.show{display:block;}
+.verdict{text-align:center;padding:.9rem;border-radius:8px;margin-bottom:.9rem;}
+.verdict.vp{background:rgba(0,255,157,.07);border:1px solid rgba(0,255,157,.3);}
+.verdict.vn{background:rgba(255,61,90,.06);border:1px solid rgba(255,61,90,.25);}
+.verdict.vm{background:rgba(255,199,64,.06);border:1px solid rgba(255,199,64,.25);}
+.vnum{font-size:2.4rem;font-weight:700;}
+.vlbl{font-size:.68rem;margin-top:.25rem;letter-spacing:.08em;}
+.sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.8rem;}
+.sbox{background:rgba(0,20,50,.4);border:1px solid var(--border);border-radius:6px;
+  padding:.45rem;text-align:center;}
+.sval{font-size:.95rem;font-weight:700;}
+.slbl{font-size:.44rem;color:var(--dim);margin-top:.1rem;line-height:1.5;}
+.ptitle{font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.4rem;}
+.plist{display:flex;flex-wrap:wrap;gap:.2rem;max-height:160px;overflow-y:auto;margin-bottom:.7rem;}
+.chip{padding:.15rem .38rem;border-radius:3px;font-size:.6rem;font-weight:700;cursor:default;}
+.ch{background:rgba(0,255,157,.12);border:1px solid rgba(0,255,157,.35);color:var(--green);}
+.cm{background:rgba(255,61,90,.08);border:1px solid rgba(255,61,90,.2);color:var(--red);}
+.cc{background:rgba(255,199,64,.08);border:1px solid rgba(255,199,64,.25);color:var(--gold);}
+canvas{display:block;width:100%;border-radius:4px;margin-top:.4rem;}
+.htitle{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.4rem;}
+.hrow{display:flex;justify-content:space-between;padding:.18rem 0;border-bottom:1px solid rgba(20,31,53,.5);font-size:.56rem;}
+.hrow:last-child{border-bottom:none;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <h1>متنبئ الأعداد الأولية</h1>
+  <div class="sub">H. CHAOUCHI 2026 · MIRROR NETWORK · d=-1 BIAS MODEL</div>
+</header>
+
+<div class="card">
+  <div class="input-row">
+    <input type="number" id="numInput" placeholder="أدخل عدداً..." min="2" value="">
+    <button class="go-btn" id="goBtn">▶ تحليل</button>
+  </div>
+  <div class="modes">
+    <button class="mbtn active" id="m0">عدد واحد<br><small style="color:var(--dim)">هل هو أولي؟</small></button>
+    <button class="mbtn" id="m1">الأولي التالي<br><small style="color:var(--dim)">بعد n</small></button>
+    <button class="mbtn" id="m2">كل الأوليات<br><small style="color:var(--dim)">في [2,n]</small></button>
+    <button class="mbtn" id="m3">تنبؤ d=-1<br><small style="color:var(--dim)">مرشحون</small></button>
+  </div>
+</div>
+
+<div class="card result" id="resultCard">
+  <div class="verdict" id="vbox">
+    <div class="vnum" id="vnum">—</div>
+    <div class="vlbl" id="vlbl">—</div>
+  </div>
+  <div class="sgrid" id="sgrid"></div>
+  <div id="pblock" style="display:none">
+    <div class="ptitle" id="ptitle">الأعداد</div>
+    <div class="plist" id="plist"></div>
+  </div>
+  <div id="mapblock" style="display:none">
+    <div class="ptitle">خريطة — 🟢 إصابة · 🔵 فائت · 🟡 كاذب · ⬛ مركب</div>
+    <canvas id="mc" height="55"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <div class="htitle">◈ سجل الاستعلامات</div>
+  <div id="hlist"><div style="color:var(--dim);font-size:.54rem">— لا يوجد سجل —</div></div>
+</div>
+
+<script>
+var currentMode = 0;
+var history = [];
+
+// ربط أزرار الوضع
+['m0','m1','m2','m3'].forEach(function(id, i) {
+  document.getElementById(id).addEventListener('click', function() {
+    currentMode = i;
+    ['m0','m1','m2','m3'].forEach(function(x){ document.getElementById(x).classList.remove('active'); });
+    this.classList.add('active');
+    var ph = ['أدخل عدداً للتحقق...','أدخل n لإيجاد أولي بعده...','أدخل N لإيجاد الأوليات في [2,N]...','أدخل N لتشغيل نموذج d=-1...'];
+    document.getElementById('numInput').placeholder = ph[i];
+  });
+});
+
+document.getElementById('goBtn').addEventListener('click', run);
+document.getElementById('numInput').addEventListener('keydown', function(e){ if(e.key==='Enter') run(); });
+
+function sieve(N) {
+  if(N<2) return [];
+  var s = new Uint8Array(N+1).fill(1); s[0]=s[1]=0;
+  for(var i=2; i*i<=N; i++) if(s[i]) for(var j=i*i; j<=N; j+=i) s[j]=0;
+  var r=[]; for(var i=2;i<=N;i++) if(s[i]) r.push(i); return r;
+}
+
+function isPrime(n) {
+  if(n<2) return false;
+  if(n<4) return true;
+  if(n%2===0||n%3===0) return false;
+  for(var i=5; i*i<=n; i+=6) if(n%i===0||n%(i+2)===0) return false;
+  return true;
+}
+
+function isCandidate(n) {
+  // n مرشح إذا كان n+1 قمة: (n+1) mod 30 ∈ {0,12,24}
+  var r = ((n+1)%30+30)%30;
+  return r===0 || r===12 || r===24;
+}
+
+function getCandidates(N) {
+  var cands = new Set();
+  [0,12,24].forEach(function(k0) {
+    var start = k0===0 ? 30 : k0;
+    for(var c=start; c<=N+1; c+=30) {
+      var x = c-1;
+      if(x>=2 && x<=N) cands.add(x);
+    }
+  });
+  return cands;
+}
+
+function run() {
+  var n = parseInt(document.getElementById('numInput').value);
+  if(!n || n<2) { alert('أدخل عدداً صحيحاً ≥ 2'); return; }
+  document.getElementById('resultCard').classList.add('show');
+  if(currentMode===0) doSingle(n);
+  else if(currentMode===1) doNext(n);
+  else if(currentMode===2) doRange(n);
+  else doPredict(n);
+}
+
+function setVerdict(cls, num, lbl, numColor) {
+  var vb = document.getElementById('vbox');
+  vb.className = 'verdict ' + cls;
+  var vn = document.getElementById('vnum');
+  vn.textContent = typeof num==='number' ? num.toLocaleString() : num;
+  vn.style.color = numColor;
+  document.getElementById('vlbl').textContent = lbl;
+  document.getElementById('vlbl').style.color = numColor;
+}
+
+function setStats(boxes) {
+  // boxes = [{val,lbl,col}]
+  document.getElementById('sgrid').innerHTML = boxes.map(function(b){
+    return '<div class="sbox"><div class="sval" style="color:'+b.col+'">'+b.val+'</div><div class="slbl">'+b.lbl+'</div></div>';
+  }).join('');
+}
+
+function addHistory(query, result, col) {
+  history.unshift({query:query, result:result, col:col});
+  if(history.length>7) history.pop();
+  document.getElementById('hlist').innerHTML = history.map(function(h){
+    return '<div class="hrow"><span style="color:var(--bright);font-weight:700">'+h.query+'</span><span style="color:'+h.col+'">'+h.result+'</span></div>';
+  }).join('');
+}
+
+// وضع 1: عدد واحد
+function doSingle(n) {
+  var prime = isPrime(n);
+  var cand  = isCandidate(n);
+  setVerdict(prime?'vp':'vn', n, prime?'✓ عدد أولي':'✗ عدد مركب', prime?'var(--green)':'var(--red)');
+  setStats([
+    {val: prime?'أولي':'مركب',   lbl:'الحقيقة',       col: prime?'var(--green)':'var(--red)'},
+    {val: cand?'مرشح':'لا',      lbl:'نموذج d=-1',     col: cand?'var(--gold)':'var(--dim)'},
+    {val: prime&&cand?'✓ إصابة':prime&&!cand?'✗ فائت':!prime&&cand?'✗ كاذب':'✓ صحيح',
+     lbl:'حكم النموذج', col: prime&&cand||!prime&&!cand?'var(--green)':'var(--red)'}
+  ]);
+  document.getElementById('pblock').style.display='none';
+  document.getElementById('mapblock').style.display='none';
+  addHistory(n.toLocaleString(), prime?'أولي ✓':'مركب ✗', prime?'var(--green)':'var(--red)');
+}
+
+// وضع 2: الأولي التالي
+function doNext(n) {
+  var next = n+1;
+  while(!isPrime(next)) next++;
+  var cand = isCandidate(next);
+  setVerdict('vp', next, 'أول عدد أولي بعد '+n.toLocaleString(), 'var(--green)');
+  setStats([
+    {val: next.toLocaleString(), lbl:'الأولي التالي',   col:'var(--green)'},
+    {val: next-n,                lbl:'الفجوة من n',     col:'var(--accent)'},
+    {val: cand?'✓ مرشح':'✗ فائت', lbl:'نموذج d=-1',   col: cand?'var(--gold)':'var(--red)'}
+  ]);
+  document.getElementById('pblock').style.display='none';
+  document.getElementById('mapblock').style.display='none';
+  addHistory('بعد '+n.toLocaleString(), next.toLocaleString(), 'var(--green)');
+}
+
+// وضع 3: كل الأوليات في [2,N]
+function doRange(N) {
+  if(N>300000){ alert('الحد الأقصى 300,000'); return; }
+  var primes   = sieve(N);
+  var cands    = getCandidates(N);
+  var hits     = primes.filter(function(p){ return cands.has(p); }).length;
+  var missed   = primes.length - hits;
+  var prec     = cands.size>0 ? (hits/cands.size*100).toFixed(1) : 0;
+  var recall   = (hits/primes.length*100).toFixed(1);
+
+  setVerdict('vp', primes.length, 'عدد أولي في [2, '+N.toLocaleString()+']', 'var(--accent)');
+  setStats([
+    {val: hits.toLocaleString(),    lbl:'أصاب النموذج\n'+recall+'% استرجاع', col:'var(--green)'},
+    {val: missed.toLocaleString(),  lbl:'فاته النموذج',                       col:'var(--red)'},
+    {val: prec+'%',                 lbl:'دقة النموذج',                        col:'var(--gold)'}
+  ]);
+
+  // قائمة الأوليات
+  document.getElementById('pblock').style.display='block';
+  document.getElementById('ptitle').textContent = 'الأعداد الأولية في [2,'+N.toLocaleString()+'] — '+primes.length+' عدد';
+  var show = primes.slice(0,400);
+  document.getElementById('plist').innerHTML = show.map(function(p){
+    return '<span class="chip '+(cands.has(p)?'ch':'cm')+'" title="'+(cands.has(p)?'النموذج أصاب':'النموذج فاته')+'">'+p+'</span>';
+  }).join('') + (primes.length>400 ? '<span style="color:var(--dim);font-size:.53rem;align-self:center">...و'+(primes.length-400).toLocaleString()+' آخرين</span>' : '');
+
+  if(N<=6000){ document.getElementById('mapblock').style.display='block'; drawMap(N,primes,cands); }
+  else document.getElementById('mapblock').style.display='none';
+
+  addHistory('[2,'+N.toLocaleString()+']', primes.length+' أولي | دقة '+prec+'%', 'var(--accent)');
+}
+
+// وضع 4: تنبؤ d=-1
+function doPredict(N) {
+  if(N>300000){ alert('الحد الأقصى 300,000'); return; }
+  var cands  = Array.from(getCandidates(N)).sort(function(a,b){return a-b;});
+  var primes = sieve(N);
+  var pset   = new Set(primes);
+  var hits   = cands.filter(function(c){ return pset.has(c); });
+  var prec   = cands.length>0 ? (hits.length/cands.length*100).toFixed(1) : 0;
+  var recall = (hits.length/primes.length*100).toFixed(1);
+
+  setVerdict('vm', cands.length, 'مرشح بنموذج d=-1 في [2,'+N.toLocaleString()+']', 'var(--gold)');
+  setStats([
+    {val: hits.length.toLocaleString(), lbl:'أولي حقيقي\nمن المرشحين', col:'var(--green)'},
+    {val: prec+'%',                     lbl:'دقة التنبؤ',               col:'var(--gold)'},
+    {val: recall+'%',                   lbl:'استرجاع\n(أوليات مُكتشفة)',col:'var(--accent)'}
+  ]);
+
+  document.getElementById('pblock').style.display='block';
+  document.getElementById('ptitle').textContent = 'مرشحو النموذج — أخضر=أولي ✓ · أحمر=مركب ✗';
+  var show = cands.slice(0,400);
+  document.getElementById('plist').innerHTML = show.map(function(c){
+    var real = pset.has(c);
+    return '<span class="chip '+(real?'ch':'cm')+'" title="'+(real?'✓ أولي':'✗ مركب')+'">'+c+'</span>';
+  }).join('') + (cands.length>400 ? '<span style="color:var(--dim);font-size:.53rem;align-self:center">...و'+(cands.length-400).toLocaleString()+' آخرين</span>' : '');
+
+  if(N<=6000){ document.getElementById('mapblock').style.display='block'; drawMap(N,primes,new Set(cands)); }
+  else document.getElementById('mapblock').style.display='none';
+
+  addHistory('تنبؤ [2,'+N.toLocaleString()+']', cands.length+' مرشح | دقة '+prec+'%', 'var(--gold)');
+}
+
+function drawMap(N, primes, cands) {
+  var cv = document.getElementById('mc');
+  var W  = cv.parentElement.clientWidth - 10;
+  cv.width = W; cv.height = 55;
+  var ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,55);
+  var pset = new Set(primes);
+  var step = Math.max(1, Math.ceil(N/W));
+  var bW   = Math.max(1, W / Math.ceil(N/step));
+  for(var n=2; n<=N; n+=step){
+    var x     = ((n-2)/(N-1))*W;
+    var prime = pset.has(n);
+    var cand  = cands.has(n);
+    if(prime&&cand)       ctx.fillStyle='rgba(0,255,157,0.85)';
+    else if(prime&&!cand) ctx.fillStyle='rgba(0,180,255,0.7)';
+    else if(!prime&&cand) ctx.fillStyle='rgba(255,199,64,0.6)';
+    else                  ctx.fillStyle='rgba(14,22,45,0.9)';
+    ctx.fillRect(x, 8, Math.max(1,bW), 42);
+  }
+}
+</script>
+</body>
+</html>

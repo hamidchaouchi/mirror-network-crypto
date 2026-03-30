@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>نموذج التنبؤ بالانحياز d=-1 — شبكة المرايا</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cairo:wght@400;700;900&display=swap');
+:root{
+  --bg:#05080f;--panel:#090e1a;--border:#141f35;
+  --text:#6b8caa;--bright:#d4eaf7;--dim:#1e3050;
+  --accent:#00e5ff;--gold:#ffc740;--green:#00ff9d;
+  --red:#ff3d5a;--purple:#b060ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 25%,rgba(0,229,255,.04),transparent 60%),
+             radial-gradient(ellipse 60% 40% at 85% 75%,rgba(176,96,255,.04),transparent 60%);
+  pointer-events:none;z-index:0;}
+header{position:relative;z-index:10;padding:1.2rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;}
+.logo{width:44px;height:44px;border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--accent);box-shadow:0 0 20px rgba(0,229,255,.3);animation:glow 3s ease-in-out infinite;flex-shrink:0;}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3);}50%{box-shadow:0 0 40px rgba(0,229,255,.6);}}
+.htxt h1{font-family:'Cairo',sans-serif;font-size:1rem;font-weight:900;color:var(--bright);}
+.htxt p{font-size:.5rem;color:var(--dim);margin-top:.12rem;letter-spacing:.1em;}
+
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:275px 1fr;height:calc(100vh - 74px);}
+.sb{background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.blk{padding:.7rem .8rem;border-bottom:1px solid var(--border);}
+.blk h3{font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.5rem;}
+.row{display:flex;align-items:center;gap:.35rem;margin-bottom:.3rem;}
+.row label{font-size:.54rem;color:var(--text);min-width:90px;}
+input[type=number],select{flex:1;background:rgba(0,50,100,.3);border:1px solid var(--border);border-radius:3px;color:var(--bright);padding:.2rem .35rem;font-family:'Space Mono',monospace;font-size:.58rem;outline:none;}
+input:focus,select:focus{border-color:var(--accent);}
+.btn{width:100%;background:rgba(0,100,200,.2);border:1px solid var(--accent);color:var(--accent);padding:.4rem;border-radius:4px;font-family:'Space Mono',monospace;font-size:.6rem;cursor:pointer;transition:all .2s;margin-top:.3rem;}
+.btn:hover{background:rgba(0,229,255,.15);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.pw{height:3px;background:var(--border);border-radius:2px;margin-top:.4rem;overflow:hidden;display:none;}
+.pb{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .2s;}
+
+.bstat{background:rgba(0,20,50,.4);border:1px solid var(--border);border-radius:5px;padding:.45rem .6rem;margin-bottom:.22rem;text-align:center;}
+.bstat-val{font-size:1.2rem;font-weight:700;}
+.bstat-lbl{font-size:.45rem;color:var(--dim);margin-top:.1rem;line-height:1.5;}
+
+/* جدول التنبؤات */
+.pred-table{width:100%;border-collapse:collapse;font-size:.52rem;margin-top:.3rem;}
+.pred-table th{color:var(--dim);padding:.2rem .3rem;text-align:center;border-bottom:1px solid var(--border);}
+.pred-table td{padding:.18rem .3rem;text-align:center;border-bottom:1px solid rgba(20,31,53,.5);}
+.hit{color:var(--green);}
+.miss{color:var(--red);}
+.partial{color:var(--gold);}
+
+.verdict-box{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:5px;padding:.55rem .7rem;font-size:.56rem;line-height:2;margin-top:.25rem;}
+.v-yes{color:var(--green);font-weight:700;}
+.v-no{color:var(--red);font-weight:700;}
+.v-mid{color:var(--gold);font-weight:700;}
+
+.main{display:flex;flex-direction:column;padding:.9rem 1rem;gap:.7rem;overflow-y:auto;}
+.cwrap{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:.55rem .75rem;}
+.ctitle{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:.38rem;}
+canvas{display:block;width:100%;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:var(--panel);}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <div class="htxt">
+    <h1>نموذج التنبؤ بالانحياز d=-1 — شبكة المرايا</h1>
+    <p>H. CHAOUCHI 2026 · BIAS d=-1 PREDICTION MODEL · PRECISION ANALYSIS</p>
+  </div>
+</header>
+<div class="layout">
+  <div class="sb">
+    <div class="blk">
+      <h3>⟁ الإعداد</h3>
+      <div class="row"><label>النطاق</label><input type="number" id="rangeMax" value="10000" min="100" max="200000" step="1000"></div>
+      <div class="row"><label>الانحياز d</label>
+        <select id="bias">
+          <option value="-2">d = -2</option>
+          <option value="-1" selected>d = -1 (مثالي)</option>
+          <option value="0">d = 0 (المركز)</option>
+          <option value="1">d = +1</option>
+          <option value="2">d = +2</option>
+          <option value="best">أفضل d تلقائياً</option>
+        </select>
+      </div>
+      <div class="row"><label>نمط القمم</label>
+        <select id="pattern">
+          <option value="all3" selected>الثلاث طبقات (12,24,0)</option>
+          <option value="12">k₀=12 فقط</option>
+          <option value="24">k₀=24 فقط</option>
+          <option value="0">k₀=0 فقط</option>
+        </select>
+      </div>
+      <button class="btn" id="btnRun">▶ تشغيل النموذج</button>
+      <div class="pw" id="pw"><div class="pb" id="pb"></div></div>
+    </div>
+
+    <div class="blk">
+      <h3>◈ أداء النموذج</h3>
+      <div class="bstat">
+        <div class="bstat-val" id="hitRate" style="color:var(--green)">—%</div>
+        <div class="bstat-lbl">معدل الإصابة<br>(مرشح صحيح / كل المرشحين)</div>
+      </div>
+      <div class="bstat">
+        <div class="bstat-val" id="recall" style="color:var(--accent)">—%</div>
+        <div class="bstat-lbl">الاسترجاع<br>(أوليات مُكتشفة / كل الأوليات)</div>
+      </div>
+      <div class="bstat">
+        <div class="bstat-val" id="f1Score" style="color:var(--gold)">—</div>
+        <div class="bstat-lbl">F1-Score<br>(توازن الدقة والاسترجاع)</div>
+      </div>
+      <div class="bstat">
+        <div class="bstat-val" id="bestBias" style="color:var(--purple)">—</div>
+        <div class="bstat-lbl">أفضل انحياز d في هذا النطاق</div>
+      </div>
+    </div>
+
+    <div class="blk">
+      <h3>☰ الحكم</h3>
+      <div class="verdict-box" id="verdict"><span style="color:var(--dim)">—</span></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="cwrap">
+      <div class="ctitle">مقارنة الانحياز d من -5 إلى +5 — أيها الأفضل؟</div>
+      <canvas id="cBiasSweep" height="200"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">توزيع الانحياز الأمثل عبر النطاق — هل d=-1 ثابت أم يتغير؟</div>
+      <canvas id="cBiasMap" height="130"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">دقة النموذج عبر النطاق — هل تتحسن أم تتدهور مع الأعداد الكبيرة؟</div>
+      <canvas id="cPrecision" height="180"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">مصفوفة الارتباك — إصابة / خطأ / فائت لكل طبقة</div>
+      <canvas id="cMatrix" height="150"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+function sieve(N){
+  const s=new Uint8Array(N+1).fill(1);s[0]=s[1]=0;
+  for(let i=2;i*i<=N;i++)if(s[i])for(let j=i*i;j<=N;j+=i)s[j]=0;
+  const r=[];for(let i=2;i<=N;i++)if(s[i])r.push(i);return r;
+}
+
+function buildPeaks(k0, N){
+  const p=[];
+  for(let c=((k0%30)+30)%30; c<=N; c+=30) p.push(c);
+  return p;
+}
+
+let allPrimes=[], primeSet=new Set();
+let biasSweep=[];   // {d, hits, recall, f1}
+let biasMapData=[];  // لكل قطاع: أفضل d
+let precisionMap=[]; // {segment, precision, recall}
+let layerMatrix=[];  // {layer, hits, falsePos, missed}
+
+document.getElementById('btnRun').addEventListener('click', async()=>{
+  const N       = +document.getElementById('rangeMax').value||10000;
+  const biasVal = document.getElementById('bias').value;
+  const pattern = document.getElementById('pattern').value;
+
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('pw').style.display='block';
+  document.getElementById('pb').style.width='5%';
+
+  allPrimes = sieve(N);
+  primeSet  = new Set(allPrimes);
+
+  // بناء القمم
+  let peaks=[];
+  if(pattern==='all3'){
+    peaks=[...buildPeaks(12,N),...buildPeaks(24,N),...buildPeaks(0,N)];
+  } else {
+    peaks=buildPeaks(+pattern,N);
+  }
+  peaks.sort((a,b)=>a-b);
+
+  document.getElementById('pb').style.width='15%';
+  await tick();
+
+  // --- مسح الانحياز من -5 إلى +5 ---
+  biasSweep=[];
+  for(let d=-5; d<=5; d++){
+    const candidates=new Set(peaks.map(c=>c+d).filter(x=>x>=2&&x<=N));
+    const hits   = [...candidates].filter(x=>primeSet.has(x)).length;
+    const recall = +(hits/allPrimes.length*100).toFixed(2);
+    const prec   = candidates.size>0?+(hits/candidates.size*100).toFixed(2):0;
+    const f1     = (prec+recall)>0?+(2*prec*recall/(prec+recall)).toFixed(2):0;
+    biasSweep.push({d, hits, recall, precision:prec, f1, total:candidates.size});
+  }
+
+  // أفضل d
+  const bestD = biasSweep.reduce((a,b)=>b.f1>a.f1?b:a);
+  document.getElementById('bestBias').textContent = 'd = '+bestD.d;
+
+  document.getElementById('pb').style.width='35%';
+  await tick();
+
+  // --- الانحياز المختار ---
+  const chosenD = biasVal==='best' ? bestD.d : +biasVal;
+  const chosen  = biasSweep.find(b=>b.d===chosenD)||bestD;
+
+  document.getElementById('hitRate').textContent  = chosen.precision+'%';
+  document.getElementById('recall').textContent   = chosen.recall+'%';
+  document.getElementById('f1Score').textContent  = chosen.f1;
+
+  document.getElementById('pb').style.width='50%';
+  await tick();
+
+  // --- خريطة الانحياز الأمثل عبر النطاق ---
+  // نقسم النطاق إلى 20 قطاع ونجد أفضل d في كل قطاع
+  const nSeg=20;
+  const segSize=Math.ceil(N/nSeg);
+  biasMapData=[];
+  for(let s=0;s<nSeg;s++){
+    const lo=s*segSize, hi=Math.min(N,(s+1)*segSize);
+    const segPrimes=allPrimes.filter(p=>p>=lo&&p<hi);
+    const segPeaks=peaks.filter(c=>c>=lo&&c<hi);
+    let bestDseg=-99, bestF1=0;
+    for(let d=-5;d<=5;d++){
+      const cands=new Set(segPeaks.map(c=>c+d).filter(x=>x>=lo&&x<hi&&x>=2));
+      const h=[...cands].filter(x=>primeSet.has(x)).length;
+      const rec=segPrimes.length>0?h/segPrimes.length:0;
+      const pr=cands.size>0?h/cands.size:0;
+      const f=pr+rec>0?2*pr*rec/(pr+rec):0;
+      if(f>bestF1){bestF1=f;bestDseg=d;}
+    }
+    biasMapData.push({seg:s, lo, hi, bestD:bestDseg, f1:bestF1});
+  }
+
+  document.getElementById('pb').style.width='70%';
+  await tick();
+
+  // --- دقة النموذج عبر النطاق ---
+  precisionMap=[];
+  for(let s=0;s<nSeg;s++){
+    const lo=s*segSize, hi=Math.min(N,(s+1)*segSize);
+    const segPrimes=allPrimes.filter(p=>p>=lo&&p<hi);
+    const segPeaks=peaks.filter(c=>c>=lo&&c<hi);
+    const cands=new Set(segPeaks.map(c=>c+chosenD).filter(x=>x>=2&&x<hi&&x>=lo));
+    const hits=[...cands].filter(x=>primeSet.has(x)).length;
+    const pr=cands.size>0?+(hits/cands.size*100).toFixed(1):0;
+    const rec=segPrimes.length>0?+(hits/segPrimes.length*100).toFixed(1):0;
+    precisionMap.push({seg:s, lo, hi, precision:pr, recall:rec, hits, total:cands.size, totalPrimes:segPrimes.length});
+  }
+
+  document.getElementById('pb').style.width='85%';
+  await tick();
+
+  // --- مصفوفة الطبقات ---
+  const layerDefs = pattern==='all3'
+    ? [{k:12,label:'k=12'},{k:24,label:'k=24'},{k:0,label:'k=0'}]
+    : [{k:+pattern,label:`k=${pattern}`}];
+
+  layerMatrix=layerDefs.map(({k,label})=>{
+    const lPeaks=buildPeaks(k,N);
+    const cands=new Set(lPeaks.map(c=>c+chosenD).filter(x=>x>=2&&x<=N));
+    const hits=[...cands].filter(x=>primeSet.has(x)).length;
+    const fp=cands.size-hits;
+    const covered=new Set([...cands].filter(x=>primeSet.has(x)));
+    const missed=allPrimes.filter(p=>!covered.has(p)).length;
+    return{label, hits, falsePos:fp, missed, total:cands.size};
+  });
+
+  renderVerdict(chosen, chosenD, N);
+  document.getElementById('pb').style.width='100%';
+  await tick();
+
+  drawBiasSweep();
+  drawBiasMap();
+  drawPrecisionMap();
+  drawMatrix();
+
+  document.getElementById('btnRun').disabled=false;
+});
+
+function tick(){ return new Promise(r=>setTimeout(r,0)); }
+
+function renderVerdict(chosen, d, N){
+  const el=document.getElementById('verdict');
+  const {precision, recall, f1} = chosen;
+
+  if(f1>50&&precision>30&&recall>80){
+    el.innerHTML=`<span class="v-yes">★ النموذج يعمل!</span><br>
+    d=${d}: دقة ${precision}% | استرجاع ${recall}%<br>
+    F1 = ${f1} — توازن جيد<br>
+    ← الانحياز d=${d} يعطي تنبؤاً حقيقياً.<br>
+    ← كل مرشح عنده احتمال ${precision}% أن يكون أولياً.`;
+  } else if(recall>90){
+    el.innerHTML=`<span class="v-mid">⚠ استرجاع ممتاز، دقة منخفضة</span><br>
+    d=${d}: دقة ${precision}% | استرجاع ${recall}%<br>
+    ← النموذج يجد معظم الأوليات لكن مع ضوضاء كثيرة.<br>
+    ← يحتاج فلتر إضافي لرفع الدقة.`;
+  } else if(precision>50){
+    el.innerHTML=`<span class="v-mid">⚠ دقة جيدة، استرجاع منخفض</span><br>
+    d=${d}: دقة ${precision}% | استرجاع ${recall}%<br>
+    ← النموذج دقيق لكن يفوته أوليات كثيرة.<br>
+    ← جرب d أفضل أو وسّع النافذة.`;
+  } else {
+    el.innerHTML=`<span class="v-no">✗ أداء ضعيف عند d=${d}</span><br>
+    دقة ${precision}% | استرجاع ${recall}%<br>
+    ← جرب "أفضل d تلقائياً" للحصول على النتيجة المثلى.`;
+  }
+}
+
+function setupCanvas(id,h){
+  const c=document.getElementById(id);
+  const W=c.parentElement.clientWidth-20;
+  c.width=W;c.height=h;
+  return{ctx:c.getContext('2d'),W,H:h};
+}
+
+function drawBiasSweep(){
+  const {ctx,W,H}=setupCanvas('cBiasSweep',200);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:45,r:20,t:25,b:35};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const n=biasSweep.length;
+  const toX=i=>pad.l+(i/(n-1))*cW;
+  const toY=v=>pad.t+((100-v)/100)*cH;
+
+  // grid
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  [0,25,50,75,100].forEach(v=>{
+    const y=toY(v);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText(v+'%',pad.l-3,y+3);
+  });
+
+  // منطقة الاسترجاع
+  ctx.beginPath();
+  biasSweep.forEach((b,i)=>i===0?ctx.moveTo(toX(i),toY(b.recall)):ctx.lineTo(toX(i),toY(b.recall)));
+  ctx.lineTo(toX(n-1),pad.t+cH);ctx.lineTo(toX(0),pad.t+cH);ctx.closePath();
+  const g=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+  g.addColorStop(0,'rgba(0,229,255,0.2)');g.addColorStop(1,'rgba(0,229,255,0)');
+  ctx.fillStyle=g;ctx.fill();
+
+  // خط الاسترجاع
+  ctx.strokeStyle='var(--accent)';ctx.lineWidth=2;
+  ctx.beginPath();
+  biasSweep.forEach((b,i)=>i===0?ctx.moveTo(toX(i),toY(b.recall)):ctx.lineTo(toX(i),toY(b.recall)));
+  ctx.stroke();
+
+  // خط الدقة
+  ctx.strokeStyle='var(--gold)';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  biasSweep.forEach((b,i)=>i===0?ctx.moveTo(toX(i),toY(b.precision)):ctx.lineTo(toX(i),toY(b.precision)));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // خط F1
+  ctx.strokeStyle='var(--green)';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  biasSweep.forEach((b,i)=>i===0?ctx.moveTo(toX(i),toY(b.f1)):ctx.lineTo(toX(i),toY(b.f1)));
+  ctx.stroke();
+
+  // نقاط وقيم
+  biasSweep.forEach((b,i)=>{
+    const x=toX(i);
+    const isSelected=document.getElementById('bias').value==='best'
+      ? b.f1===Math.max(...biasSweep.map(x=>x.f1))
+      : b.d===+document.getElementById('bias').value;
+
+    // نقطة F1
+    ctx.beginPath();ctx.arc(x,toY(b.f1),isSelected?6:3,0,Math.PI*2);
+    ctx.fillStyle=isSelected?'var(--green)':'rgba(0,255,157,0.5)';ctx.fill();
+    if(isSelected){
+      ctx.strokeStyle='var(--green)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(x,toY(b.f1),10,0,Math.PI*2);ctx.stroke();
+    }
+
+    // label d
+    ctx.fillStyle=isSelected?'#d4eaf7':'#1e3050';
+    ctx.font=`${isSelected?'bold ':''  }8px Space Mono`;ctx.textAlign='center';
+    ctx.fillText((b.d>=0?'+':'')+b.d, x, H-5);
+
+    if(isSelected){
+      ctx.fillStyle='var(--green)';ctx.font='bold 8px Space Mono';
+      ctx.fillText('F1='+b.f1+'%',x,toY(b.f1)-14);
+    }
+  });
+
+  // legend
+  ctx.fillStyle='var(--accent)';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('— استرجاع',pad.l,pad.t-10);
+  ctx.fillStyle='var(--gold)';ctx.fillText('--- دقة',pad.l+70,pad.t-10);
+  ctx.fillStyle='var(--green)';ctx.fillText('— F1',pad.l+130,pad.t-10);
+}
+
+function drawBiasMap(){
+  const {ctx,W,H}=setupCanvas('cBiasMap',130);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:30,r:15,t:30,b:20};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const n=biasMapData.length;
+  const bW=cW/n;
+
+  // لوحة ألوان للانحياز -5..+5
+  const dColors={
+    '-5':'#ff0055','-4':'#ff3366','-3':'#ff6688','-2':'#ff99aa','-1':'#ffcc00',
+    '0':'#ffffff','1':'#aaffcc','2':'#55ffaa','3':'#00ff88','4':'#00cc66','5':'#009944'
+  };
+
+  biasMapData.forEach((seg,i)=>{
+    const x=pad.l+i*bW;
+    const col=dColors[String(seg.bestD)]||'#ffffff';
+    // شريط الانحياز
+    ctx.fillStyle=col+'cc';
+    ctx.fillRect(x+1,pad.t,bW-2,cH);
+    // شدة حسب F1
+    ctx.fillStyle=`rgba(0,0,0,${1-seg.f1})`;
+    ctx.fillRect(x+1,pad.t,bW-2,cH);
+    // label
+    if(i%4===0){
+      ctx.fillStyle='#1e3050';ctx.font='7px Space Mono';ctx.textAlign='center';
+      ctx.fillText(Math.round(seg.lo/1000)+'k',x+bW/2,H-3);
+    }
+    // d label
+    ctx.fillStyle='#000';ctx.font='bold 7px Space Mono';ctx.textAlign='center';
+    ctx.fillText((seg.bestD>=0?'+':'')+seg.bestD,x+bW/2,pad.t+cH/2+3);
+  });
+
+  // legend
+  ctx.fillStyle='#ffcc00';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('أفضل d في كل قطاع — أصفر=d=-1، أخضر=양موجب، أحمر=سالب',pad.l,pad.t-8);
+}
+
+function drawPrecisionMap(){
+  const {ctx,W,H}=setupCanvas('cPrecision',180);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:45,r:15,t:20,b:35};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const n=precisionMap.length;
+  const toX=i=>pad.l+(i/(n-1))*cW;
+  const toY=v=>pad.t+((100-v)/100)*cH;
+
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  [0,25,50,75,100].forEach(v=>{
+    const y=toY(v);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText(v+'%',pad.l-3,y+3);
+  });
+
+  // منطقة الدقة
+  ctx.beginPath();
+  precisionMap.forEach((s,i)=>i===0?ctx.moveTo(toX(i),toY(s.precision)):ctx.lineTo(toX(i),toY(s.precision)));
+  ctx.lineTo(toX(n-1),pad.t+cH);ctx.lineTo(toX(0),pad.t+cH);ctx.closePath();
+  const g2=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+  g2.addColorStop(0,'rgba(255,199,64,0.25)');g2.addColorStop(1,'rgba(255,199,64,0)');
+  ctx.fillStyle=g2;ctx.fill();
+
+  ctx.strokeStyle='var(--gold)';ctx.lineWidth=2;
+  ctx.beginPath();
+  precisionMap.forEach((s,i)=>i===0?ctx.moveTo(toX(i),toY(s.precision)):ctx.lineTo(toX(i),toY(s.precision)));
+  ctx.stroke();
+
+  ctx.strokeStyle='var(--accent)';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  precisionMap.forEach((s,i)=>i===0?ctx.moveTo(toX(i),toY(s.recall)):ctx.lineTo(toX(i),toY(s.recall)));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // نقاط
+  precisionMap.forEach((s,i)=>{
+    const x=toX(i);
+    ctx.beginPath();ctx.arc(x,toY(s.precision),3,0,Math.PI*2);
+    ctx.fillStyle=s.precision>30?'var(--gold)':'var(--red)';ctx.fill();
+    if(i%4===0){
+      ctx.fillStyle='#1e3050';ctx.font='7px Space Mono';ctx.textAlign='center';
+      ctx.fillText(Math.round(s.lo/1000)+'k',x,H-5);
+    }
+  });
+
+  ctx.fillStyle='var(--gold)';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('— دقة النموذج',pad.l,pad.t-6);
+  ctx.fillStyle='var(--accent)';
+  ctx.fillText('--- الاسترجاع',pad.l+100,pad.t-6);
+}
+
+function drawMatrix(){
+  const {ctx,W,H}=setupCanvas('cMatrix',150);
+  ctx.clearRect(0,0,W,H);
+  if(!layerMatrix.length)return;
+  const pad={l:15,r:15,t:25,b:15};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const n=layerMatrix.length;
+  const rowH=cH/n-4;
+
+  ctx.fillStyle='#d4eaf7';ctx.font='bold 9px Space Mono';ctx.textAlign='left';
+  ctx.fillText('الطبقة',pad.l,pad.t-8);
+  ctx.fillStyle='var(--green)';ctx.textAlign='center';
+  ctx.fillText('إصابة',pad.l+cW*0.45,pad.t-8);
+  ctx.fillStyle='var(--red)';
+  ctx.fillText('خطأ',pad.l+cW*0.65,pad.t-8);
+  ctx.fillStyle='var(--purple)';
+  ctx.fillText('فائت',pad.l+cW*0.82,pad.t-8);
+  ctx.fillStyle='#1e3050';
+  ctx.fillText('دقة%',pad.l+cW*0.97,pad.t-8);
+
+  layerMatrix.forEach((l,i)=>{
+    const y=pad.t+i*(rowH+4);
+    const prec=l.total>0?+(l.hits/l.total*100).toFixed(1):0;
+    const maxW=cW*0.4;
+    const hitW=(l.hits/(l.hits+l.falsePos||1))*maxW;
+    const fpW=(l.falsePos/(l.hits+l.falsePos||1))*maxW;
+
+    // label
+    ctx.fillStyle='#d4eaf7';ctx.font='bold 9px Space Mono';ctx.textAlign='left';
+    ctx.fillText(l.label,pad.l,y+rowH/2+3);
+
+    // شريط إصابة+خطأ
+    ctx.fillStyle='rgba(0,255,157,0.7)';
+    ctx.fillRect(pad.l+cW*0.35,y+2,hitW,rowH-4);
+    ctx.fillStyle='rgba(255,61,90,0.6)';
+    ctx.fillRect(pad.l+cW*0.35+hitW,y+2,fpW,rowH-4);
+
+    // أرقام
+    ctx.fillStyle='var(--green)';ctx.font='8px Space Mono';ctx.textAlign='center';
+    ctx.fillText(l.hits.toLocaleString(),pad.l+cW*0.45,y+rowH/2+3);
+    ctx.fillStyle='var(--red)';
+    ctx.fillText(l.falsePos.toLocaleString(),pad.l+cW*0.65,y+rowH/2+3);
+    ctx.fillStyle='var(--purple)';
+    ctx.fillText(l.missed.toLocaleString(),pad.l+cW*0.82,y+rowH/2+3);
+    ctx.fillStyle=prec>30?'var(--gold)':'var(--red)';
+    ctx.fillText(prec+'%',pad.l+cW*0.97,y+rowH/2+3);
+  });
+}
+
+window.addEventListener('load',()=>setTimeout(()=>document.getElementById('btnRun').click(),300));
+</script>
+</body>
+</html>

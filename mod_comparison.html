@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مقارنة الهياكل — mod 30 vs 210 vs 2310</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cairo:wght@400;700;900&display=swap');
+:root{
+  --bg:#05080f;--panel:#090e1a;--border:#141f35;
+  --text:#6b8caa;--bright:#d4eaf7;--dim:#1e3050;
+  --accent:#00e5ff;--gold:#ffc740;--green:#00ff9d;
+  --red:#ff3d5a;--purple:#b060ff;--orange:#ff7700;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 25%,rgba(0,229,255,.04),transparent 60%),
+             radial-gradient(ellipse 60% 40% at 85% 75%,rgba(176,96,255,.04),transparent 60%);
+  pointer-events:none;z-index:0;}
+header{position:relative;z-index:10;padding:1.2rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;}
+.logo{width:44px;height:44px;border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--accent);box-shadow:0 0 20px rgba(0,229,255,.3);animation:glow 3s ease-in-out infinite;flex-shrink:0;}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3);}50%{box-shadow:0 0 40px rgba(0,229,255,.6);}}
+.htxt h1{font-family:'Cairo',sans-serif;font-size:1.1rem;font-weight:900;color:var(--bright);}
+.htxt p{font-size:.55rem;color:var(--dim);margin-top:.15rem;letter-spacing:.1em;}
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 74px);}
+.sb{background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.blk{padding:.8rem .9rem;border-bottom:1px solid var(--border);}
+.blk h3{font-size:.52rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.6rem;}
+.row{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;}
+.row label{font-size:.58rem;color:var(--text);min-width:80px;}
+select,input[type=number]{flex:1;background:rgba(0,50,100,.3);border:1px solid var(--border);border-radius:3px;color:var(--bright);padding:.25rem .4rem;font-family:'Space Mono',monospace;font-size:.62rem;outline:none;}
+select:focus,input:focus{border-color:var(--accent);}
+.btn{width:100%;background:rgba(0,100,200,.2);border:1px solid var(--accent);color:var(--accent);padding:.4rem;border-radius:4px;font-family:'Space Mono',monospace;font-size:.62rem;cursor:pointer;transition:all .2s;margin-top:.3rem;}
+.btn:hover{background:rgba(0,229,255,.15);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.pw{height:3px;background:var(--border);border-radius:2px;margin-top:.45rem;overflow:hidden;display:none;}
+.pb{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .3s;}
+
+/* بطاقات المقارنة */
+.mcard{background:rgba(0,20,50,.3);border:1px solid var(--border);border-radius:6px;padding:.65rem .8rem;margin-bottom:.3rem;}
+.mcard.best{border-color:var(--green);box-shadow:0 0 12px rgba(0,255,157,.1);}
+.mc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;}
+.mc-name{font-size:.72rem;font-weight:700;}
+.mc-score{font-size:.72rem;font-weight:700;}
+.mc-body{font-size:.56rem;color:var(--dim);line-height:1.8;}
+.mc-bar{height:4px;border-radius:2px;margin-top:.4rem;transition:width .5s;}
+
+.verdict{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.18);border-radius:5px;padding:.65rem .8rem;font-size:.6rem;line-height:1.9;margin-top:.3rem;}
+.v-strong{color:var(--green);font-weight:700;}
+.v-weak{color:var(--gold);font-weight:700;}
+
+.main{display:flex;flex-direction:column;padding:.9rem 1.1rem;gap:.7rem;overflow-y:auto;}
+.cwrap{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:.5rem .6rem;}
+.ctitle{font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:.35rem;}
+canvas{display:block;width:100%;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:var(--panel);}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">∿</div>
+  <div class="htxt">
+    <h1>مقارنة mod 30 — mod 210 — mod 2310</h1>
+    <p>H. CHAOUCHI 2026 · PRIMORIAL STRUCTURE COMPARISON · WHEEL DEPTH ANALYSIS</p>
+  </div>
+</header>
+<div class="layout">
+  <div class="sb">
+    <div class="blk">
+      <h3>⟁ الإعداد</h3>
+      <div class="row"><label>نطاق الاختبار</label>
+        <select id="range">
+          <option value="10000" selected>100 → 10,000</option>
+          <option value="100000">100 → 100,000</option>
+          <option value="999983">100 → 999,983</option>
+        </select>
+      </div>
+      <div class="row"><label>أعداد مساعدة</label>
+        <input type="number" id="helpers" value="300" min="100" max="800">
+      </div>
+      <button class="btn" id="btnRun">▶ تشغيل المقارنة</button>
+      <div class="pw" id="pw"><div class="pb" id="pb"></div></div>
+    </div>
+
+    <div class="blk">
+      <h3>◈ نتائج المقارنة</h3>
+      <div id="cards"><div style="color:var(--dim);font-size:.58rem;padding:.2rem">— في انتظار —</div></div>
+    </div>
+
+    <div class="blk">
+      <h3>★ الحكم النهائي</h3>
+      <div class="verdict" id="verdict"><span style="color:var(--dim)">—</span></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="cwrap">
+      <div class="ctitle">مقارنة الفصل إحصائياً — أولي vs مركب</div>
+      <canvas id="cSep" height="200"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">F(p) لكل هيكل — توزيع القيم (أولي = أزرق، مركب = بنفسجي)</div>
+      <canvas id="cDist" height="180"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">الفصل عبر النطاقات — هل mod 210 أفضل في الأعداد الكبيرة؟</div>
+      <canvas id="cLayers" height="180"></canvas>
+    </div>
+    <div class="cwrap">
+      <div class="ctitle">حجم مجموعة التعريف φ(q) مقابل قوة الفصل</div>
+      <canvas id="cPhi" height="150"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+function sieve(N){
+  const s=new Uint8Array(N+1).fill(1);s[0]=s[1]=0;
+  for(let i=2;i*i<=N;i++)if(s[i])for(let j=i*i;j<=N;j+=i)s[j]=0;
+  const r=[];for(let i=2;i<=N;i++)if(s[i])r.push(i);return r;
+}
+function gcd(a,b){while(b){[a,b]=[b,a%b];}return a;}
+function coprimes(q){const r=[];for(let i=1;i<q;i++)if(gcd(i,q)===1)r.push(i);return r;}
+
+// الهياكل الثلاثة
+const STRUCTURES=[
+  {name:'mod 30',  q:30,  color:'#00e5ff', phi:8,   label:'2×3×5'},
+  {name:'mod 210', q:210, color:'#00ff9d', phi:48,  label:'2×3×5×7'},
+  {name:'mod 2310',q:2310,color:'#ffc740', phi:480, label:'2×3×5×7×11'},
+];
+
+// حساب مجموعة الأعداد الأولية النسبية
+STRUCTURES.forEach(s=>{
+  s.copSet=coprimes(s.q);
+});
+
+// حساب F
+function computeF(p, copSet, q, helpers){
+  const t=Math.log(p);
+  let F=0;
+  for(const h of helpers){
+    if(h>=p)break;
+    const r=h%q;
+    if(!copSet.includes(r))continue;
+    F+=Math.cos(t*Math.log(h))/Math.sqrt(h);
+  }
+  return F;
+}
+
+function separation(primes,composites,copSet,q,helpers){
+  if(!primes.length||!composites.length)return 0;
+  const fp=primes.map(p=>computeF(p,copSet,q,helpers));
+  const fc=composites.map(c=>computeF(c,copSet,q,helpers));
+  const avgP=fp.reduce((a,b)=>a+b,0)/fp.length;
+  const avgC=fc.reduce((a,b)=>a+b,0)/fc.length;
+  return{sep:+(avgC-avgP).toFixed(5),avgP:+avgP.toFixed(4),avgC:+avgC.toFixed(4),fp,fc};
+}
+
+let RES=[];
+
+document.getElementById('btnRun').addEventListener('click',async()=>{
+  const rangeMax=+document.getElementById('range').value||10000;
+  const hMax=+document.getElementById('helpers').value||300;
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('pw').style.display='block';
+  RES=[];
+
+  const allPrimes=sieve(rangeMax);
+  const primeSet=new Set(allPrimes);
+  const helpers=sieve(hMax);
+  const testP=allPrimes.filter(p=>p>=100&&p<=rangeMax).slice(0,200);
+  const testC=[];
+  for(let n=101;n<=rangeMax&&testC.length<200;n+=2)if(!primeSet.has(n))testC.push(n);
+
+  // طبقات للمقارنة عبر النطاقات
+  const layers=[
+    {lo:100,hi:1000},
+    {lo:1000,hi:5000},
+    {lo:5000,hi:rangeMax}
+  ].filter(l=>l.hi<=rangeMax);
+
+  for(let si=0;si<STRUCTURES.length;si++){
+    const s=STRUCTURES[si];
+    document.getElementById('pb').style.width=((si+.5)/STRUCTURES.length*100)+'%';
+    await new Promise(r=>setTimeout(r,0));
+
+    // فصل كلي
+    const{sep,avgP,avgC,fp,fc}=separation(testP.slice(0,100),testC.slice(0,100),s.copSet,s.q,helpers);
+
+    // فصل لكل طبقة
+    const layerSeps=layers.map(({lo,hi})=>{
+      const lp=allPrimes.filter(p=>p>=lo&&p<hi).slice(0,60);
+      const lc=[];for(let n=lo+1;n<hi&&lc.length<60;n+=2)if(!primeSet.has(n))lc.push(n);
+      if(!lp.length||!lc.length)return 0;
+      return separation(lp,lc,s.copSet,s.q,helpers).sep;
+    });
+
+    RES.push({...s,sep,avgP,avgC,fp:fp.slice(0,80),fc:fc.slice(0,80),layerSeps});
+    document.getElementById('pb').style.width=((si+1)/STRUCTURES.length*100)+'%';
+  }
+
+  document.getElementById('btnRun').disabled=false;
+  renderCards();
+  renderVerdict();
+  drawAll();
+});
+
+function renderCards(){
+  const el=document.getElementById('cards');el.innerHTML='';
+  const maxSep=Math.max(...RES.map(r=>r.sep));
+  RES.forEach(r=>{
+    const isBest=r.sep===maxSep;
+    const div=document.createElement('div');
+    div.className='mcard'+(isBest?' best':'');
+    const col=r.sep>0.05?'var(--green)':r.sep>0.01?'var(--gold)':'var(--red)';
+    const pct=Math.max(0,r.sep/maxSep*100);
+    div.innerHTML=`
+      <div class="mc-head">
+        <span class="mc-name" style="color:${r.color}">${r.name}</span>
+        <span class="mc-score" style="color:${col}">${r.sep}</span>
+      </div>
+      <div class="mc-body">
+        φ(${r.q}) = ${r.phi} عالم · ${r.label}<br>
+        avg أولي: ${r.avgP} · avg مركب: ${r.avgC}<br>
+        ${isBest?'★ الأفضل':''}
+      </div>
+      <div class="mc-bar" style="width:${pct}%;background:${r.color}"></div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderVerdict(){
+  const el=document.getElementById('verdict');
+  if(!RES.length)return;
+  const sorted=[...RES].sort((a,b)=>b.sep-a.sep);
+  const best=sorted[0],base=RES.find(r=>r.q===30);
+  const improvement=base&&base.sep>0?(best.sep-base.sep)/base.sep*100:0;
+
+  // هل يتحسن مع زيادة q؟
+  const trend=RES[0].sep<RES[1]?.sep&&RES[1]?.sep<RES[2]?.sep;
+
+  let html=`أفضل هيكل: <span style="color:${best.color};font-weight:700">${best.name}</span><br>`;
+  if(trend){
+    html+=`<span class="v-strong">✓ الفصل يتحسن مع زيادة q!</span><br>
+    mod 30 → mod 210 → mod 2310: تحسن تدريجي.<br>
+    كلما زاد عدد العوالم، زادت دقة الفصل.<br>
+    <strong>التوصية: استخدم mod 210 كحد أدنى.</strong>`;
+  } else if(best.q>30){
+    html+=`<span class="v-weak">⚠ ${best.name} أفضل بـ ${improvement.toFixed(1)}%</span><br>
+    لكن التحسن غير خطي — زيادة φ لا تضمن فصلاً أفضل دائماً.`;
+  } else {
+    html+=`<span style="color:var(--red);font-weight:700">mod 30 لا يزال الأفضل</span><br>
+    زيادة التعقيد (mod 210, 2310) لا تضيف قوة فصل في هذا النطاق.<br>
+    السبب: الأعداد المساعدة (${document.getElementById('helpers').value}) غير كافية لاستغلال البنية الأعمق.`;
+  }
+
+  // مقارنة الطبقات
+  const bigLayerWinner=RES.reduce((best,r)=>
+    (r.layerSeps[r.layerSeps.length-1]||0)>(best.layerSeps[best.layerSeps.length-1]||0)?r:best,RES[0]);
+  html+=`<br>في الأعداد الكبيرة: <span style="color:${bigLayerWinner.color}">${bigLayerWinner.name}</span> أقوى`;
+
+  el.innerHTML=html;
+}
+
+// ===== رسم =====
+function setup(id,h){
+  const c=document.getElementById(id);
+  const W=c.parentElement.clientWidth-20;
+  c.width=W;c.height=h;
+  return{ctx:c.getContext('2d'),W,H:h};
+}
+
+function drawSep(){
+  const{ctx,W,H}=setup('cSep',200);
+  ctx.clearRect(0,0,W,H);
+  if(!RES.length)return;
+  const pad={l:50,r:20,t:20,b:40};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+
+  const allV=[...RES.flatMap(r=>[r.avgP,r.avgC])];
+  const yMin=Math.min(...allV)-.05,yMax=Math.max(...allV)+.05;
+
+  // grid
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText((yMax-(i/4)*(yMax-yMin)).toFixed(3),pad.l-3,y+3);
+  }
+  // خط صفر
+  if(yMin<0&&yMax>0){
+    const y0=pad.t+(yMax/(yMax-yMin))*cH;
+    ctx.strokeStyle='rgba(255,255,255,.1)';ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(pad.l,y0);ctx.lineTo(W-pad.r,y0);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const bW=cW/RES.length/3;
+  RES.forEach((r,i)=>{
+    const cx=pad.l+(i+.5)*cW/RES.length;
+    // عمود أولي
+    const yP=pad.t+((yMax-r.avgP)/(yMax-yMin))*cH;
+    const y0=pad.t+(yMax/(yMax-yMin))*cH;
+    ctx.fillStyle=r.color+'99';
+    ctx.fillRect(cx-bW-2,Math.min(yP,y0),bW,Math.abs(yP-y0));
+    ctx.strokeStyle=r.color;ctx.lineWidth=1.5;
+    ctx.strokeRect(cx-bW-2,Math.min(yP,y0),bW,Math.abs(yP-y0));
+
+    // عمود مركب
+    const yC=pad.t+((yMax-r.avgC)/(yMax-yMin))*cH;
+    ctx.fillStyle='rgba(176,96,255,.4)';
+    ctx.fillRect(cx+2,Math.min(yC,y0),bW,Math.abs(yC-y0));
+    ctx.strokeStyle='#b060ff';ctx.lineWidth=1.5;
+    ctx.strokeRect(cx+2,Math.min(yC,y0),bW,Math.abs(yC-y0));
+
+    // سهم الفصل
+    ctx.strokeStyle=r.color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,yP);ctx.lineTo(cx,yC);ctx.stroke();
+    // label
+    ctx.fillStyle=r.color;ctx.font='bold 9px Space Mono';ctx.textAlign='center';
+    ctx.fillText(r.name,cx,H-pad.b+15);
+    ctx.fillStyle='#d4eaf7';ctx.font='8px Space Mono';
+    ctx.fillText('Δ='+r.sep,cx,H-pad.b+26);
+  });
+
+  // legend
+  ctx.fillStyle='rgba(0,229,255,.7)';ctx.font='8px Space Mono';ctx.textAlign='left';
+  ctx.fillText('■ أولي',pad.l+4,pad.t+10);
+  ctx.fillStyle='rgba(176,96,255,.7)';
+  ctx.fillText('■ مركب',pad.l+55,pad.t+10);
+}
+
+function drawDist(){
+  const{ctx,W,H}=setup('cDist',180);
+  ctx.clearRect(0,0,W,H);
+  if(!RES.length)return;
+  const pad={l:15,r:15,t:15,b:30};
+  const cH=H-pad.t-pad.b;
+  const sW=(W-pad.l-pad.r)/RES.length;
+
+  RES.forEach((r,si)=>{
+    const x0=pad.l+si*sW;
+    const allV=[...r.fp,...r.fc];
+    const vMin=Math.min(...allV),vMax=Math.max(...allV);
+    const range=vMax-vMin||1;
+
+    // نقاط
+    r.fp.forEach(v=>{
+      const x=x0+((v-vMin)/range)*sW*.9+sW*.05;
+      const y=pad.t+Math.random()*cH*.8+cH*.1;
+      ctx.beginPath();ctx.arc(x,y,1.8,0,Math.PI*2);
+      ctx.fillStyle=r.color+'88';ctx.fill();
+    });
+    r.fc.forEach(v=>{
+      const x=x0+((v-vMin)/range)*sW*.9+sW*.05;
+      const y=pad.t+Math.random()*cH*.8+cH*.1;
+      ctx.beginPath();ctx.arc(x,y,1.8,0,Math.PI*2);
+      ctx.fillStyle='rgba(176,96,255,.5)';ctx.fill();
+    });
+
+    // خط متوسط أولي
+    const avgPx=x0+((r.avgP-vMin)/range)*sW*.9+sW*.05;
+    ctx.strokeStyle=r.color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(avgPx,pad.t+5);ctx.lineTo(avgPx,pad.t+cH-5);ctx.stroke();
+
+    // خط متوسط مركب
+    const avgCx=x0+((r.avgC-vMin)/range)*sW*.9+sW*.05;
+    ctx.strokeStyle='#b060ff';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(avgCx,pad.t+5);ctx.lineTo(avgCx,pad.t+cH-5);ctx.stroke();
+    ctx.setLineDash([]);
+
+    // تسمية
+    ctx.fillStyle=r.color;ctx.font='bold 9px Space Mono';ctx.textAlign='center';
+    ctx.fillText(r.name,x0+sW/2,H-4);
+    // الفصل
+    ctx.fillStyle='#d4eaf7';ctx.font='8px Space Mono';
+    ctx.fillText('Δ='+r.sep,x0+sW/2,H-14);
+
+    // فاصل
+    if(si<RES.length-1){
+      ctx.strokeStyle='#141f35';ctx.lineWidth=1;ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(x0+sW,pad.t);ctx.lineTo(x0+sW,pad.t+cH);ctx.stroke();
+    }
+  });
+}
+
+function drawLayers(){
+  const{ctx,W,H}=setup('cLayers',180);
+  ctx.clearRect(0,0,W,H);
+  if(!RES.length||!RES[0].layerSeps.length)return;
+  const pad={l:50,r:50,t:15,b:30};
+  const nL=RES[0].layerSeps.length;
+  const allSep=RES.flatMap(r=>r.layerSeps);
+  const yMin=Math.min(0,...allSep)-.01,yMax=Math.max(...allSep)+.02;
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+
+  // grid
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  for(let i=0;i<=3;i++){
+    const y=pad.t+(i/3)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText((yMax-(i/3)*(yMax-yMin)).toFixed(3),pad.l-3,y+3);
+  }
+
+  RES.forEach(r=>{
+    ctx.strokeStyle=r.color;ctx.lineWidth=2;
+    ctx.beginPath();
+    r.layerSeps.forEach((s,i)=>{
+      const x=pad.l+(i/(nL-1||1))*cW;
+      const y=pad.t+((yMax-s)/(yMax-yMin))*cH;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    r.layerSeps.forEach((s,i)=>{
+      const x=pad.l+(i/(nL-1||1))*cW;
+      const y=pad.t+((yMax-s)/(yMax-yMin))*cH;
+      ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+      ctx.fillStyle=r.color;ctx.fill();
+      ctx.fillStyle='#05080f';ctx.font='bold 7px Space Mono';ctx.textAlign='center';
+      ctx.fillText(s.toFixed(3),x,y+(s>0?-8:14));
+    });
+    // legend
+    const li=RES.indexOf(r);
+    ctx.fillStyle=r.color;ctx.font='8px Space Mono';ctx.textAlign='left';
+    ctx.fillText(r.name,W-pad.r+4,pad.t+li*14+8);
+  });
+
+  const labels=['صغير','متوسط','كبير'];
+  for(let i=0;i<nL;i++){
+    const x=pad.l+(i/(nL-1||1))*cW;
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='center';
+    ctx.fillText(labels[i]||`L${i}`,x,H-4);
+  }
+}
+
+function drawPhi(){
+  const{ctx,W,H}=setup('cPhi',150);
+  ctx.clearRect(0,0,W,H);
+  if(!RES.length)return;
+  const pad={l:50,r:20,t:15,b:35};
+  const phis=RES.map(r=>r.phi);
+  const seps=RES.map(r=>r.sep);
+  const xMin=0,xMax=Math.max(...phis)*1.1;
+  const yMin=0,yMax=Math.max(...seps)*1.2||.1;
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+
+  // grid
+  ctx.strokeStyle='#141f35';ctx.lineWidth=1;
+  for(let i=0;i<=3;i++){
+    const y=pad.t+(i/3)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='right';
+    ctx.fillText((yMax-(i/3)*yMax).toFixed(3),pad.l-3,y+3);
+  }
+
+  // نقاط
+  RES.forEach(r=>{
+    const x=pad.l+(r.phi/xMax)*cW;
+    const y=pad.t+((yMax-r.sep)/yMax)*cH;
+    // هالة
+    ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);
+    ctx.fillStyle=r.color+'22';ctx.fill();
+    // نقطة
+    ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);
+    ctx.fillStyle=r.color;ctx.fill();
+    // تسمية
+    ctx.fillStyle=r.color;ctx.font='bold 9px Space Mono';ctx.textAlign='center';
+    ctx.fillText(r.name,x,y-16);
+    ctx.fillStyle='#d4eaf7';ctx.font='7px Space Mono';
+    ctx.fillText(`φ=${r.phi}`,x,y+20);
+    // محور x
+    ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';
+    ctx.fillText(r.phi,x,H-4);
+  });
+
+  // خط اتجاه
+  if(RES.length>=2){
+    ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    const x0=pad.l+(RES[0].phi/xMax)*cW;
+    const y0=pad.t+((yMax-RES[0].sep)/yMax)*cH;
+    const xN=pad.l+(RES[RES.length-1].phi/xMax)*cW;
+    const yN=pad.t+((yMax-RES[RES.length-1].sep)/yMax)*cH;
+    ctx.moveTo(x0,y0);ctx.lineTo(xN,yN);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.fillStyle='#1e3050';ctx.font='8px Space Mono';ctx.textAlign='center';
+  ctx.fillText('φ(q) — عدد العوالم',pad.l+cW/2,H-4);
+}
+
+function drawAll(){drawSep();drawDist();drawLayers();drawPhi();}
+window.addEventListener('resize',()=>{if(RES.length)drawAll();});
+</script>
+</body>
+</html>
